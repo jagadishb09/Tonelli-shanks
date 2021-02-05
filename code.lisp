@@ -47,25 +47,11 @@
    :hints (("Goal"
 	    :use ((:instance q2s-is-correct-1 (y a))
 		  (:instance q2s-is-correct-2-1-1 (a x) (b 2) (c (expt 2 a)))
-		  ;; (:instance associativity-of-*
-		  ;; 	    (x x)
-		  ;; 	    (y 2)
-		  ;; 	    (z (expt 2 a)))
-		  ;; (:instance commutativity-of-*
-		  ;; 	    (x x)
-		  ;; 	    (y 2))
-		  ;; (:instance associativity-of-*
-		  ;; 	    (y x)
-		  ;; 	    (x 2)
-		  ;; 	    (z (expt 2 a)))
 		  )
-					;:do-not-induct t
 	    :in-theory nil
 	    ))
    )
  )
-
-
 
 (defthmd q2s-is-correct-2
   (IMPLIES (AND (EQUAL (EXPT 2 (+ 1 (MV-NTH 1 (Q*2^S (* N 1/2)))))
@@ -86,8 +72,7 @@
 	   :use(
 		(:instance q2s-is-correct-2-1
 			   (a (MV-NTH 1 (Q*2^S (* N 1/2))))
-			   (x (MV-NTH 0 (Q*2^S (* N 1/2)))))
-		
+			   (x (MV-NTH 0 (Q*2^S (* N 1/2)))))		
 		)
 	   :in-theory nil
 	   ))
@@ -109,13 +94,3 @@
 	   )
 	  )
   )
-
-#||                                                                                                                                                                                               
-
-;; How about something like this.                                                                                                                                                                 
-;; What hints will get it to work, or how can it be restructured                                                                                                                                  
-;; to work?                                                                                                                                                                                       
-
-
-
-||#
