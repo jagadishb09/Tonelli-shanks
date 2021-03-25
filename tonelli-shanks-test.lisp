@@ -143,6 +143,9 @@
   (implies (< 0 M)
            (< (least-repeated-square tt M p) M)))
 
+(defthm least-repeated-square-is-natp
+  (natp (least-repeated-square tt M p)))
+
 ;; ----------------
 ;; main T-S loop
 ;; step 4 of
@@ -283,34 +286,3 @@
 				  rtl::oddp-odd-prime
 				  natp)
                                  (oddp)))))
-
-
-
-;; (defun least-repeated-square-aux-equiv (i tt^2^i M p)
-;;   (declare (xargs :guard (and (natp i) (natp tt^2^i) (natp M) (natp p) (<= 0 i)
-;;                               (< 2 p))
-;;                   :guard-hints (("Goal"
-;;                                  :in-theory (enable rationalp natp)
-;;                                  ))
-;;                   ))
-;;   (declare (xargs :measure (nfix (- M i))))
-;;   (if (and (natp i) (natp M) (< i M))
-;;       (let ((next-square (mod (expt tt^2^i 2) p)))
-;;         (if (= next-square 1)
-;;             i
-;;           (least-repeated-square-aux-equiv (+ i 1) next-square M p)))
-;;     0))
-
-;; (defthm least-repeated-square-aux-equiv-1
-;;   (implies (and (natp a)
-;;                 (natp b)
-;;                 (natp c)
-;;                 (natp d)
-;;                 (< 0 a)
-;;                 (< 2 d))
-;;            (equal (least-repeated-square-aux-equiv a b c d)
-;;                   (least-repeated-square-aux-equiv
-;;                    a
-;;                    (expt b (expt 2 (- a 1)))
-;;                    c
-;;                    d))))
