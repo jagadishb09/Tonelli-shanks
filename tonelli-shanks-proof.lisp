@@ -338,55 +338,7 @@
     )
   )
 
-(encapsulate
-  ()
-  (local
-   (defthm least-repeated-square-aux-not=0-9-2
-     (IMPLIES (AND (AND (NATP D) (NATP M) (< D M))
-                   (NOT (= (ACL2::MOD-EXPT-FAST TT (EXPT 2 D) P)
-                           1))
-                   (IMPLIES (AND (NATP TT)
-                                 (NATP M)
-                                 (NATP P)
-                                 (< 2 P)
-                                 (NATP (+ D 1))
-                                 (<= 0 (+ D 1))
-                                 (< (+ D 1) M)
-                                 (EQUAL (LEAST-REPEATED-SQUARE-AUX (+ D 1)
-                                                                   TT M P)
-                                        (+ D 1))
-                                 (NATP I)
-                                 (< I (+ D 1)))
-                            (<= (LEAST-REPEATED-SQUARE-AUX I TT M P)
-                                (+ D 1))))
-              (IMPLIES (AND (NATP TT)
-                            (NATP M)
-                            (NATP P)
-                            (< 2 P)
-                            (NATP D)
-                            (<= 0 D)
-                            (< D M)
-                            (EQUAL (LEAST-REPEATED-SQUARE-AUX D TT M P)
-                                   D)
-                            (NATP I)
-                            (< I D))
-                       (<= (LEAST-REPEATED-SQUARE-AUX I TT M P)
-                           D)))
-     )
-   )
-
-  (defthmd least-repeated-square-aux-not=0-9
-    (implies (and (natp tt)
-                  (natp m)
-                  (natp p)
-                  (< 2 p)
-                  (equal (least-repeated-square-aux d tt m p) d)
-                  (natp i)
-                  (< i d))
-             (<= (least-repeated-square-aux i tt m p) d))
-    )
-  )
-
+;;copied from quadratic-residue.lisp
 (defthm mod-expt-fast-instance-meaning
   (implies (and (rtl::primep p)
                 (fep m p))
@@ -421,6 +373,83 @@
            ))
   )
 
+(encapsulate
+  ()
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (local
+   (defthm t-s-aux-lemma-1
+     (implies (and (integerp a)
+                   (integerp b)
+                   (integerp c))
+              (equal (expt (expt a b) c)
+                     (expt a (* b c))))
+     )
+   )
+
+  (local
+   (defthm t-s-aux-lemma-2-1
+     (implies (and (integerp a)
+                   (integerp b)
+                   (integerp c))
+              (equal (expt a (* b (expt 2 (- c 1))))
+                     (expt a (/ (* b (expt 2 c)) 2)))))
+   )
+
+  (defthm T-S-aux-z-is-non-residue
+    (implies (and (rtl::primep p)
+                  (< 2 p)
+                  (natp z)
+                  (not (has-square-root? z p))
+                  (> z 0)
+                  (< z p))
+             (EQUAL (MOD (EXPT (EXPT Z (MV-NTH 0 (Q*2^S (+ -1 P))))
+                               (EXPT 2 (+ -1 (MV-NTH 1 (Q*2^S (+ -1 P))))))
+                         P)
+                    (+ -1 P)))
+    :hints (("Goal"
+             
+             :use ((:instance q2s-is-correct (n (- p 1)))
+                   (:instance T-S-aux-euler-criterion (n z) (p p))
+                   (:instance posp-Q*2^S-n-is-even (n (- p 1)))
+                   (:instance Q*2^S-type-1 (n (- p 1)))
+                   (:instance mv-nth-1!=0 (p p))
+                   (:instance t-s-aux-lemma-1
+                              (a z)
+                              (b (MV-NTH 0 (Q*2^S (+ -1 P))))
+                              (c (EXPT 2 (+ -1 (MV-NTH 1 (Q*2^S (+ -1 P)))))))
+                   )
+             :in-theory (e/d (acl2::mod-expt-fast acl2::not-evenp-when-oddp) ())
+             ))
+    )
+
+  (defthm T-S-aux-n-is-residue
+    (implies (and (rtl::primep p)
+                  (< 2 p)
+                  (natp n)
+                  (has-square-root? n p)
+                  (> n 0)
+                  (< n p))
+             (EQUAL (MOD (EXPT (EXPT n (MV-NTH 0 (Q*2^S (+ -1 P))))
+                               (EXPT 2 (+ -1 (MV-NTH 1 (Q*2^S (+ -1 P))))))
+                         P)
+                    1))
+    :hints (("Goal"
+             
+             :use ((:instance q2s-is-correct (n (- p 1)))
+                   (:instance posp-Q*2^S-n-is-even (n (- p 1)))
+                   (:instance Q*2^S-type-1 (n (- p 1)))
+                   (:instance mv-nth-1!=0 (p p))
+                   (:instance t-s-aux-lemma-1
+                              (a z)
+                              (b (MV-NTH 0 (Q*2^S (+ -1 P))))
+                              (c (EXPT 2 (+ -1 (MV-NTH 1 (Q*2^S (+ -1 P)))))))
+                   )
+             :in-theory (e/d (acl2::mod-expt-fast acl2::not-evenp-when-oddp) ())
+             ))
+    )
+  )
+
 (skip-proofs
  (defthm t-s-aux-equiv-lemma1-2
    (implies (and (natp z)
@@ -429,7 +458,6 @@
                  (< 2 p)
                  (= z 0))
             (has-square-root? z p))
-;(> z 0))
    :hints (("Goal"
             :cases ((= z 0))
             :in-theory (e/d (ACL2::MOD-EXPT-FAST acl2::not-evenp-when-oddp) ())
@@ -437,6 +465,309 @@
             ))
    )
  )
+
+;; (encapsulate
+;;   ()
+
+;;   (local (include-book "arithmetic-5/top" :dir :system))
+
+;;   (local
+;;    (defthm t-s-aux-equiv-subgoal1-1-1
+;;      (implies (and (rationalp a)
+;;                    (rationalp b)
+;;                    (natp a)
+;;                    (natp b))
+;;               (equal (* (expt c a) (expt c b))
+;;                      (expt c (+ a b))))))
+
+;;   (local
+;;    (defthm t-s-aux-equiv-subgoal1-1
+;;      (implies (and (integerp a)
+;;                    (natp a)
+;;                    (integerp c))
+;;               (equal (* (expt c (expt 2 a)) (expt c (expt 2 a)))
+;;                      (expt c (expt 2 (+ a 1)))))))
+
+;;   (local
+;;    (skip-proofs
+;;     (defthm t-s-aux-equiv-subgoal1-2
+;;       (IMPLIES
+;;        (AND (INTEGERP N)
+;;             (<= 0 N)
+;;             (<= 0 P)
+;;             (INTEGERP Z)
+;;             (<= 0 Z)
+;;             (NOT (EQUAL (MOD (EXPT Z (+ -1/2 (* 1/2 P))) P)
+;;                         1))
+;;             (< 2 P)
+;;             (< Z P)
+;;             (RTL::PRIMEP P)
+;;             (< N P)
+;;             (EQUAL (MOD (EXPT N (+ -1/2 (* 1/2 P))) P)
+;;                    1)
+;;             (< 0 N)
+;;             (INTEGERP M)
+;;             (< 0 M)
+;;             (EQUAL (MOD (EXPT C (EXPT 2 (+ -1 M))) P)
+;;                    (+ -1 P))
+;;             (INTEGERP C)
+;;             (<= 0 C)
+;;             (INTEGERP TT)
+;;             (<= 0 TT)
+;;             (INTEGERP R)
+;;             (<= 0 R)
+;;             (EQUAL (MOD (* R R) P) (MOD (* N TT) P))
+;;             (EQUAL (MOD (EXPT TT
+;;                               (EXPT 2 (LEAST-REPEATED-SQUARE TT M P)))
+;;                         P)
+;;                    1)
+;;             (< 0 (LEAST-REPEATED-SQUARE TT M P)))
+;;        (EQUAL
+;;         (MOD
+;;          (EXPT
+;;           (* TT
+;;              (EXPT C
+;;                    (EXPT 2
+;;                          (+ M (- (LEAST-REPEATED-SQUARE TT M P))))))
+;;           (EXPT
+;;            2
+;;            (- (LEAST-REPEATED-SQUARE TT M P) 1)))
+;;          p)
+;;         1))
+;;       )
+;;     )
+;;    )
+
+;;   (local
+;;    (skip-proofs
+;;     (defthm t-s-aux-subgoal1-3
+;;       (implies (and (INTEGERP N)
+;;                     (<= 0 N)
+;;                     (<= 0 P)
+;;                     (INTEGERP Z)
+;;                     (<= 0 Z)
+;;                     (NOT (EQUAL (MOD (EXPT Z (+ -1/2 (* 1/2 P))) P)
+;;                                 1))
+;;                     (< 2 P)
+;;                     (< Z P)
+;;                     (RTL::PRIMEP P)
+;;                     (< N P)
+;;                     (EQUAL (MOD (EXPT N (+ -1/2 (* 1/2 P))) P)
+;;                            1)
+;;                     (< 0 N)
+;;                     (INTEGERP M)
+;;                     (< 0 M)
+;;                     (EQUAL (MOD (EXPT C (EXPT 2 (+ -1 M))) P)
+;;                            (+ -1 P))
+;;                     (INTEGERP C)
+;;                     (<= 0 C)
+;;                     (INTEGERP TT)
+;;                     (<= 0 TT)
+;;                     (INTEGERP R)
+;;                     (<= 0 R)
+;;                     (EQUAL (MOD (* R R) P) (MOD (* N TT) P))
+;;                     (EQUAL (MOD (EXPT TT
+;;                                       (EXPT 2 (LEAST-REPEATED-SQUARE TT M P)))
+;;                                 P)
+;;                            1)
+;;                     (< 0 (LEAST-REPEATED-SQUARE TT M P)))
+;;                (AND (INTEGERP (+ -1 M (- (LEAST-REPEATED-SQUARE TT M P))))
+;;                     (NATP (+ -1 (LEAST-REPEATED-SQUARE TT M P)))
+;;                     (NATP (* TT
+;;                     (EXPT C
+;;                           (EXPT 2
+;;                                 (+ M
+;;                                    (- (LEAST-REPEATED-SQUARE TT M P))))))))))
+;;     )
+;;    )
+
+;;   ;; (local
+;;   ;;  (defthm t-s-aux-equiv-subgoal1-8
+;;   ;;    (IMPLIES
+;;   ;;     (AND
+;;   ;;      (EQUAL (* (EXPT C
+;;   ;;                      (EXPT 2
+;;   ;;                            (+ -1
+;;   ;;                               M (- (LEAST-REPEATED-SQUARE TT M P)))))
+;;   ;;                (EXPT C
+;;   ;;                      (EXPT 2
+;;   ;;                            (+ -1
+;;   ;;                               M (- (LEAST-REPEATED-SQUARE TT M P))))))
+;;   ;;             (EXPT C
+;;   ;;                   (EXPT 2
+;;   ;;                         (+ (+ -1 M (- (LEAST-REPEATED-SQUARE TT M P)))
+;;   ;;                            1))))
+;;   ;;      (=
+;;   ;;       (MOD
+;;   ;;        (EXPT
+;;   ;;         (* TT
+;;   ;;            (EXPT C
+;;   ;;                  (EXPT 2
+;;   ;;                        (+ M (- (LEAST-REPEATED-SQUARE TT M P))))))
+;;   ;;         (EXPT 2
+;;   ;;               (LEAST-REPEATED-SQUARE
+;;   ;;                (* TT
+;;   ;;                   (EXPT C
+;;   ;;                         (EXPT 2
+;;   ;;                               (+ M (- (LEAST-REPEATED-SQUARE TT M P))))))
+;;   ;;                (LEAST-REPEATED-SQUARE TT M P)
+;;   ;;                P)))
+;;   ;;        P)
+;;   ;;       1)
+;;   ;;      (INTEGERP (+ -1
+;;   ;;                   M (- (LEAST-REPEATED-SQUARE TT M P))))
+;;   ;;      (NATP (+ -1 (LEAST-REPEATED-SQUARE TT M P)))
+;;   ;;      (NATP (* TT
+;;   ;;               (EXPT C
+;;   ;;                     (EXPT 2
+;;   ;;                           (+ M
+;;   ;;                              (- (LEAST-REPEATED-SQUARE TT M P)))))))
+;;   ;;      (INTEGERP N)
+;;   ;;      (<= 0 N)
+;;   ;;      (<= 0 P)
+;;   ;;      (INTEGERP Z)
+;;   ;;      (<= 0 Z)
+;;   ;;      (NOT (EQUAL (MOD (EXPT Z (+ -1/2 (* 1/2 P))) P)
+;;   ;;                  1))
+;;   ;;      (< 2 P)
+;;   ;;      (< Z P)
+;;   ;;      (RTL::PRIMEP P)
+;;   ;;      (< N P)
+;;   ;;      (EQUAL (MOD (EXPT N (+ -1/2 (* 1/2 P))) P)
+;;   ;;             1)
+;;   ;;      (< 0 N)
+;;   ;;      (INTEGERP M)
+;;   ;;      (< 0 M)
+;;   ;;      (EQUAL (MOD (EXPT C (EXPT 2 (+ -1 M))) P)
+;;   ;;             (+ -1 P))
+;;   ;;      (INTEGERP C)
+;;   ;;      (<= 0 C)
+;;   ;;      (INTEGERP TT)
+;;   ;;      (<= 0 TT)
+;;   ;;      (INTEGERP R)
+;;   ;;      (<= 0 R)
+;;   ;;      (EQUAL (MOD (* R R) P) (MOD (* N TT) P))
+;;   ;;      (EQUAL (MOD (EXPT TT
+;;   ;;                        (EXPT 2 (LEAST-REPEATED-SQUARE TT M P)))
+;;   ;;                  P)
+;;   ;;             1)
+;;   ;;      (< 0 (LEAST-REPEATED-SQUARE TT M P)))
+;;   ;;     (EQUAL
+;;   ;;      (MOD
+;;   ;;       (EXPT
+;;   ;;        (* TT
+;;   ;;           (EXPT C
+;;   ;;                 (EXPT 2
+;;   ;;                       (+ (+ -1 M (- (LEAST-REPEATED-SQUARE TT M P)))
+;;   ;;                          1))))
+;;   ;;        (EXPT
+;;   ;;         2
+;;   ;;         (LEAST-REPEATED-SQUARE
+;;   ;;          (MOD (* TT
+;;   ;;                  (EXPT C
+;;   ;;                        (EXPT 2
+;;   ;;                              (+ (+ -1 M (- (LEAST-REPEATED-SQUARE TT M P)))
+;;   ;;                                 1))))
+;;   ;;               P)
+;;   ;;          (LEAST-REPEATED-SQUARE TT M P)
+;;   ;;          P)))
+;;   ;;       P)
+;;   ;;      1))
+;;   ;;    :hints (("Goal"
+;;   ;;             :in-theory (e/d () (least-repeated-square mod expt))
+;;   ;;             ))
+;;   ;;            )
+;;   ;;    )
+              
+        
+;;   (defthm t-s-aux-equiv-subgoal1
+;;     (IMPLIES
+;;      (AND (INTEGERP N)
+;;           (<= 0 N)
+;;           (<= 0 P)
+;;           (INTEGERP Z)
+;;           (<= 0 Z)
+;;           (NOT (EQUAL (MOD (EXPT Z (+ -1/2 (* 1/2 P))) P)
+;;                       1))
+;;           (< 2 P)
+;;           (< Z P)
+;;           (RTL::PRIMEP P)
+;;           (< N P)
+;;           (EQUAL (MOD (EXPT N (+ -1/2 (* 1/2 P))) P)
+;;                  1)
+;;           (< 0 N)
+;;           (INTEGERP M)
+;;           (< 0 M)
+;;           (EQUAL (MOD (EXPT C (EXPT 2 (+ -1 M))) P)
+;;                  (+ -1 P))
+;;           (INTEGERP C)
+;;           (<= 0 C)
+;;           (INTEGERP TT)
+;;           (<= 0 TT)
+;;           (INTEGERP R)
+;;           (<= 0 R)
+;;           (EQUAL (MOD (* R R) P) (MOD (* N TT) P))
+;;           (EQUAL (MOD (EXPT TT
+;;                             (EXPT 2 (LEAST-REPEATED-SQUARE TT M P)))
+;;                       P)
+;;                  1)
+;;           (< 0 (LEAST-REPEATED-SQUARE TT M P)))
+;;      (EQUAL
+;;       (MOD
+;;        (EXPT
+;;         (* TT
+;;            (EXPT C
+;;                  (EXPT 2
+;;                        (+ -1
+;;                           M (- (LEAST-REPEATED-SQUARE TT M P)))))
+;;            (EXPT C
+;;                  (EXPT 2
+;;                        (+ -1
+;;                           M (- (LEAST-REPEATED-SQUARE TT M P))))))
+;;         (EXPT
+;;          2
+;;          (LEAST-REPEATED-SQUARE
+;;           (MOD (* TT
+;;                   (EXPT C
+;;                         (EXPT 2
+;;                               (+ -1
+;;                                  M (- (LEAST-REPEATED-SQUARE TT M P)))))
+;;                   (EXPT C
+;;                         (EXPT 2
+;;                               (+ -1
+;;                                  M (- (LEAST-REPEATED-SQUARE TT M P))))))
+;;                P)
+;;           (LEAST-REPEATED-SQUARE TT M P)
+;;           P)))
+;;        P)
+;;       1))
+
+;;     :hints (("Goal"
+;;              ;; :use ((:instance t-s-aux-equiv-subgoal1-1
+;;              ;;                 (c c)
+;;              ;;                 (a (+ -1
+;;              ;;                       M (- (LEAST-REPEATED-SQUARE TT M P)))))
+;;              ;;       (:instance least-repeated-square-not=0
+;;              ;;                  (tt (* TT
+;;              ;;                         (EXPT C
+;;              ;;                               (EXPT 2
+;;              ;;                                     (+ M (- (LEAST-REPEATED-SQUARE
+;;              ;;                                              TT M P)))))))
+;;              ;;                  (m (LEAST-REPEATED-SQUARE TT M P))
+;;              ;;                  (i (- (LEAST-REPEATED-SQUARE TT M P) 1))
+;;              ;;                  (p p))
+;;              ;;       (:instance t-s-aux-subgoal1-3)
+;;                    ;)
+;;              ;:in-theory nil
+
+;;              ))
+    
+
+    
+;;     )
+;;   )
+
+  
 
 (encapsulate
   ()
@@ -536,6 +867,54 @@
              :in-theory (e/d () (least-repeated-square))
              ))
     )
+
+  (skip-proofs
+   (defthm t-s-aux-equiv-subgoal1
+     (implies (and (natp n)
+                   (natp p)
+                   (natp z)
+                   (not (has-square-root? z p))
+                   (< 2 p)
+                   (< z p)
+                   (rtl::primep p)
+                   (< n p)
+                   (has-square-root? n p)
+                   (< 0 n)
+
+                   (posp M);; x = S
+                   (equal (mod (expt c (expt 2 (- M 1))) p) (mod -1 p)) ;; c = (acl2::mod-expt-fast z Q p)
+;variables don't change                
+
+                   (posp M) ; M =S
+                   (natp c) ; (acl2::mod-expt-fast z Q p)
+                   (natp tt) ; (acl2::mod-expt-fast n Q p)
+                   (natp R) ; (acl2::mod-expt-fast n (/ (+ Q 1) 2) p)
+
+                   (equal (mod (* R R) p) (mod (* tt n) p))
+                   (equal (least-repeated-square tt M p) M2)
+                   (= (acl2::mod-expt-fast tt (expt 2 M2) p) 1))
+              
+              (if (zp M2)
+                  (and (equal (mod (* R R) p) (mod n p))
+                       (equal (T-S-aux M c tt R p) R)
+                       )
+                
+                (let ((b (expt c (expt 2 (- (- M M2) 1)))))
+                  (let (
+                        (c2 (mod (* b b) p))
+                        (tt2 (mod (* tt b b) p))
+                        (R2 (mod (* R b) p)))
+                    (declare (ignore R2 c2))
+                    (= (acl2::mod-expt-fast tt2 (expt 2 (least-repeated-square
+                                                         tt2 M2 p)) p) 1)
+                    ))))
+     :hints (("Goal"
+              
+              :in-theory (e/d (acl2::mod-expt-fast) ())
+              :do-not-induct t
+              ))
+     )
+   )
   
   (defthm t-s-aux-equiv
     (implies (and (natp n)
@@ -549,8 +928,8 @@
                   (has-square-root? n p)
                   (< 0 n)
 
-                  (posp x);; x = S
-                  (equal (mod (expt c (expt 2 (- x 1))) p) (mod -1 p)) ;; c = (acl2::mod-expt-fast z Q p)
+                  (posp M);; x = S
+                  (equal (mod (expt c (expt 2 (- M 1))) p) (mod -1 p)) ;; c = (acl2::mod-expt-fast z Q p)
 ;variables don't change                
 
                   (posp M) ; M =S
@@ -583,11 +962,11 @@
                         (has-square-root? n p)
                         (< 0 n)
 
-                        (posp x);; x = S
-                        (equal (mod (expt c (expt 2 (- x 1))) p) (mod -1 p)) ;; c = z^Q
+                        (posp M);; x = S
+                        (equal (mod (expt c (expt 2 (- M 1))) p) (mod -1 p)) ;; c = z^Q
 ;variables don't change                
 
-                        (posp M2) ; M =S
+                        (posp M2)
                         (natp c2) ; (acl2::mod-expt-fast z Q p)
                         (natp tt2) ; (acl2::mod-expt-fast n Q p)
                         (natp R2) ; (acl2::mod-expt-fast n (/ (+ Q 1) 2) p)
@@ -605,6 +984,54 @@
 ;:use (:instance least-repeated-square-equiv-2 (tt tt) (m e) (p p))
              :in-theory (e/d (ACL2::MOD-EXPT-FAST) (least-repeated-square))
              :do-not-induct t
+             )
+            ("Subgoal 1"
+             :use (:instance t-s-aux-equiv-subgoal1
+                             (M2 (least-repeated-square tt M p)))
+             )
+            ;; ("Subgoal 1"
+            ;;  :use ((:instance least-repeated-square-not=0
+            ;;                   (tt tt2)
+            ;;                   (m m2)
+            ;;                   (p p)
+            ;;                   (i (- M2 1)))
+            ;;        (:instance least-repeated-square-is-least
+            ;;                   (tt tt)
+            ;;                   (m m)
+            ;;                   (p p)
+            ;;                   (d M2)
+            ;;                   (i (- M2 1)))
+            ;;        (:instance y^2=1modp (p p) (y (expt b (expt 2 (- M2 1)))))
+            ;;        )
+            ;;  :in-theory (e/d () (least-repeated-square) )           
+            ;;  )
+            
+            )
+    )
+  )
+
+
+(encapsulate
+  ()
+  (local (include-book "arithmetic-5/top" :dir :system))
+  
+  (defthm hyps-true-T-S-aux-1
+    (implies (and (rtl::primep p)
+                  (< 2 p)
+                  (< 0 n)
+                  (< n p)
+                  (natp n))
+             (EQUAL (MOD (* (EXPT N
+                                  (+ 1/2
+                                     (* 1/2 (MV-NTH 0 (Q*2^S (+ -1 P))))))
+                            (EXPT N
+                                  (+ 1/2
+                                     (* 1/2 (MV-NTH 0 (Q*2^S (+ -1 P)))))))
+                         P)
+                    (MOD (* N (EXPT N (MV-NTH 0 (Q*2^S (+ -1 P)))))
+                         P)))
+    :hints (("Goal"
+             :in-theory (e/d (acl2::not-evenp-when-oddp) ())
              ))
     )
   )
@@ -641,157 +1068,91 @@
                 
                 (= (acl2::mod-expt-fast tt (expt 2 M2) p) 1)))
   :hints (("Goal"
-;:use (:instance least-repeated-square-equiv-2 (tt tt) (m e) (p p))
-           :in-theory (e/d (ACL2::MOD-EXPT-FAST) (least-repeated-square))
-           :do-not-induct t
-           ))
-  )
-                 
-
-
-                 
-                 (and (natp tt2)
-                      (rtl::primep p)
-                      (< 2 p)
-                      (< 0 m2)
-                      (natp M2)
-                      (natp x)
-                      (equal (mod (expt c (expt 2 (- x 1))) p) (mod -1 p))
-                      (integerp R2)
-                      (integerp c2)
-                      (equal (mod (* R2 R2) p) (mod (* tt2 n) p))
-                      (equal (T-S-aux e c tt R p) (T-S-aux M2 c2 tt2 R2 p)))))))
-  :hints (("Goal"
-;:use (:instance least-repeated-square-equiv-2 (tt tt) (m e) (p p))
-           :in-theory (e/d (ACL2::MOD-EXPT-FAST) (least-repeated-square))
-           :do-not-induct t
-           ))
-  )
-
-
-
-(defthm t-s-aux-equiv-lemma1
-  (IMPLIES
-   (AND (natp n)
-        (< n p)
-        (<= 0 P)
-        (< 2 P)
-        (RTL::PRIMEP P)
-        (INTEGERP TT)
-        (<= 0 TT)
-        (< 0 E)
-        (INTEGERP E)
-        (<= 0 E)
-        (INTEGERP C)
-        (natp x)
-        (EQUAL (MOD (EXPT C (EXPT 2 (+ -1 X))) P)
-               (+ -1 P))
-        (INTEGERP R)
-        (EQUAL (MOD (* R R) P) (MOD (* N TT) P))
-        (< 0 (LEAST-REPEATED-SQUARE TT E P)))
-   (EQUAL
-    (MOD (* R
-            (EXPT C
-                  (EXPT 2
-                        (+ -1
-                           E (- (LEAST-REPEATED-SQUARE TT E P)))))
-            (MOD (* R
-                    (EXPT C
-                          (EXPT 2
-                                (+ -1
-                                   E (- (LEAST-REPEATED-SQUARE TT E P))))))
-                 P))
-         P)
-    (MOD (* N TT
-            (EXPT C
-                  (EXPT 2
-                        (+ -1
-                           E (- (LEAST-REPEATED-SQUARE TT E P)))))
-            (EXPT C
-                  (EXPT 2
-                        (+ -1
-                           E (- (LEAST-REPEATED-SQUARE TT E P))))))
-         P)))
-  :hints (("Goal"
-           :use ((:instance t-s-aux-equiv-lemma1-1
-                            (a (* R
-                                  (EXPT C
-                                        (EXPT 2
-                                              (+ -1
-                                                 E (- (LEAST-REPEATED-SQUARE
-                                                       TT E P)))))))
+           :use ((:instance least-repeated-square-not=0
+                            (m M)
+                            (i (- M 1))
                             (p p))
-                 (:instance rtl::mod-times-mod
-                            (a (* R R))
-                            (b (* N tt))
-                            (c
-                             (* (EXPT C
-                                      (EXPT 2
-                                            (+ -1
-                                               E (- (LEAST-REPEATED-SQUARE TT E P)))))
-                                (EXPT C
-                                      (EXPT 2
-                                            (+ -1
-                                               E (- (LEAST-REPEATED-SQUARE TT
-                                                                           E P))))))
-                             )
-                            (n p))
-                 )
-           :in-theory (e/d () (least-repeated-square))
-           ))
-  )
-
-;; add there exists i such that tt^2^i = 1 (mod p)
-;; if there exists an i then (least-repeated-square tt e p) returns least
-;; number m such that m < e and m>=0 and tt^2^m = 1 mod p
-(defthm t-s-aux-equiv
-  (implies (and (natp n)
-                (natp p)
-                (natp z)
-                (> z 0)
-                (< 2 p)
-                (< z p)
-                (rtl::primep p)
-                (< n p)
-                (has-square-root? n p)
-                (not (has-square-root? z p))
-                
-                (natp tt) ;; n^Q
-                (< 0 e)
-                (natp e) ;; e = S
-;(equal (least-repeated-square tt e p) m)
-                (integerp c)
-                (natp x);; x = S
-                (equal (mod (expt c (expt 2 (- x 1))) p) (mod -1 p)) ;; c = z^Q
-                (integerp R) ;;R=(n^(Q+1/2))
-                (equal (mod (* R R) p) (mod (* tt n) p)))
-           (let ((m (least-repeated-square tt e p)))
-             (if (zp m)
-                 (and (equal (mod (* R R) p) (mod n p))
-                      (equal (T-S-aux e c tt R p) R)
-                      )
-               (let ((b (expt c (expt 2 (- (- e m) 1)))))
-                 (let ((M2 m)
-                       (c2 (mod (* b b) p))
-                       (tt2 (mod (* tt b b) p))
-                       (R2 (mod (* R b) p)))
-                   (and (natp tt2)
-                        (rtl::primep p)
-                        (< 2 p)
-                        (< 0 m2)
-                        (natp M2)
-                        (natp x)
-                        (equal (mod (expt c (expt 2 (- x 1))) p) (mod -1 p))
-                        (integerp R2)
-                        (integerp c2)
-                        (equal (mod (* R2 R2) p) (mod (* tt2 n) p))
-                        (equal (T-S-aux e c tt R p) (T-S-aux M2 c2 tt2 R2 p))))))))
-  :hints (("Goal"
-           :use (:instance least-repeated-square-equiv-2 (tt tt) (m e) (p p))
-           :in-theory (e/d (ACL2::MOD-EXPT-FAST) (least-repeated-square))
+                 (:instance q2s-is-correct (n (- p 1))))
+           :in-theory (e/d (ACL2::MOD-EXPT-FAST acl2::not-evenp-when-oddp) (least-repeated-square))
            :do-not-induct t
            ))
   )
+
+---------                 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ;; (defthm t-s-aux-lemma-4
 ;;   (implies (and (< 2 p)
