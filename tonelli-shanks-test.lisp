@@ -75,8 +75,6 @@
            (oddp (mv-nth 0 (Q*2^S n))))
   :hints (("Goal" :in-theory (e/d (Q*2^S oddp) ()))))
 
-;; Show that q2s is correct
-
 (defthm Q*2^S-type-0
   (natp (mv-nth 0 (Q*2^S n)))
   :rule-classes :type-prescription)
@@ -92,6 +90,7 @@
                   n))
   :hints (("Goal" :in-theory (enable q*2^s acl2::expt-of-+))))
 
+;; if n is even, then, (mv-nth 1 (Q*2^S n)) is a +ve integer
 (defthm posp-Q*2^S-n-is-even
   (implies (and (> n 1)
                 (natp n)
@@ -108,9 +107,9 @@
 ;; inner loop for main T-S loop
 
 ;; (least-repeated-square tt M p)
-;; calculates the least i, 0<i<M, such that tt^(2^i) = 1 mod p
+;; calculates the least i, 0<=i<M, such that tt^(2^i) = 1 mod p
 ;; p will be (primes::bn-254-group-prime)
-;; Return value of 0 means something went wrong (handled in the caller).
+;; Return value of 0 means either tt^2^0 = 1 mod p or i doesn't exist
 
 (defun least-repeated-square-aux (i tt M p)
   (declare (xargs :guard (and (natp i) (natp tt) (natp M) (natp p) (<= 0 i)
@@ -143,6 +142,7 @@
   (implies (< 0 M)
            (< (least-repeated-square tt M p) M)))
 
+;least-repeated-square returns a natp
 (defthm least-repeated-square-is-natp
   (natp (least-repeated-square tt M p)))
 
@@ -150,7 +150,8 @@
 ;; main T-S loop
 ;; step 4 of
 ;; https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#The_algorithm
-;; Return value of 0 means something went wrong (handled in the caller).
+;; if (least-repeated-square tt m p) returns 0, then return R,
+;; else update c, M and R and go into next loop 
 
 (encapsulate
   ()
@@ -171,13 +172,11 @@
     (declare (xargs :measure (nfix M)
                     :guard-debug t
                     :guard (and (posp M) (natp c) (natp tt) (natp R)
-                                (natp p) (< 2 p))
-                    :hints (
-                            ("Subgoal 1"
-                             :use (:instance T-S-aux-subgoal (tt tt) (m m)
-                                             (p p))
-                             )
-                            )
+                                (rtl::primep p) (< 2 p))
+                    :hints (("Goal"
+                             :use (:instance T-S-aux-subgoal
+                                             (tt tt) (m m) (p p))
+                            ))
                     ))
     (let ((M2 (least-repeated-square tt M p)))
       (if (zp M2)
@@ -220,21 +219,6 @@
 	   ))
   )
 
-;; ----------------
-;; Tonelli-Shanks modular square root algorithm,
-;; with a refinement to always return the lesser of the two square roots.
-
-;; The argument z must be a "quadratic nonresidue", which means a number
-;; that has no square root in the prime field.
-
-;; If this returns 0, it means either n is 0
-;; or there is no square root.
-;; (If there were an error, it could also return 0,
-;; so we should clarify that and prove
-;; that can't happen)
-
-;; Future work: prove correctness
-
 (defthm natp-lemma1
   (implies (and (natp n)
 		(oddp q)
@@ -248,6 +232,7 @@
 	   ))
   )
 
+;;if (MV-NTH 1 (Q*2^S (+ -1 P))) is posp implies that it is != 0
 (defthm mv-nth-1!=0
   (implies (and (< 2 p)
                 (rtl::primep p)
@@ -258,12 +243,25 @@
            ))
   )
 
-(define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
+;; ----------------
+;; Tonelli-Shanks modular square root algorithm,
+;; with a refinement to always return the lesser of the two square roots.
+
+;; The argument z must be a "quadratic nonresidue", which means a number
+;; that has no square root in the prime field.
+
+;; The argument n must be a quadratic reside in the prime field and also can be
+;; equal to 0
+
+;;The function returns the square root of n in the prime field p
+
+(define tonelli-shanks-sqrt-aux ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (has-square-root? n p) (not (has-square-root? z p)))
   :guard-debug t
-  :short "Tonelli-Shanks modular square root."
+  :short "Tonelli-Shanks modular square root for n in the prime field p"
   :long "Finds the square root of n modulo p.  p must be an odd prime.
-         z is a quadratic nonresidue in p."
+         z is a quadratic nonresidue in p. n is quadratic residue and can also
+         be 0"
   :returns (sqrt natp :hyp :guard :hints (("Goal"
 					   :in-theory (enable natp)
 					   )))
@@ -286,3 +284,30 @@
 				  rtl::oddp-odd-prime
 				  natp)
                                  (oddp)))))
+
+
+;; ----------------
+;; Tonelli-Shanks modular square root algorithm.
+
+;; The argument z must be a "quadratic nonresidue", which means a number
+;; that has no square root in the prime field.
+
+;; If this returns 0, it means either n is 0
+;; or there is no square root.
+
+(define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
+  :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
+  :guard-debug t
+  :short "Tonelli-Shanks modular square root."
+  :long "Finds the square root of n modulo p.  p must be an odd prime.
+         z is a quadratic nonresidue in p."
+  :returns (sqrt natp :hyp :guard :hints (("Goal"
+					   :in-theory (enable natp)
+					   )))
+  :parents (acl2::number-theory)
+  (if (has-square-root? n p)
+      (tonelli-shanks-sqrt-aux n p z)
+    0)
+  )
+
+
