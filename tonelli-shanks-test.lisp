@@ -27,7 +27,6 @@
 (include-book "kestrel/number-theory/quadratic-residue" :dir :system)
 (local (include-book "projects/quadratic-reciprocity/eisenstein" :dir :system))
 
-(include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;rtl::primep
 
 
@@ -63,9 +62,9 @@
   (if (or (not (natp n)) (= n 0))
       (mv 0 0)
     (if (oddp n)
-	(mv n 0)
+        (mv n 0)
       (mv-let (inner-q inner-s)
-        (Q*2^S (/ n 2))
+          (Q*2^S (/ n 2))
         (mv inner-q (+ inner-s 1)))))
   ///
   (verify-guards Q*2^S))
@@ -74,6 +73,8 @@
   (implies (and (natp n) (< 0 n))
            (oddp (mv-nth 0 (Q*2^S n))))
   :hints (("Goal" :in-theory (e/d (Q*2^S oddp) ()))))
+
+;; Show that q2s is correct:
 
 (defthm Q*2^S-type-0
   (natp (mv-nth 0 (Q*2^S n)))
@@ -90,7 +91,7 @@
                   n))
   :hints (("Goal" :in-theory (enable q*2^s acl2::expt-of-+))))
 
-;; if n is even, then, (mv-nth 1 (Q*2^S n)) is a +ve integer
+;; if n is even, then, (mv-nth 1 (Q*2^S n)) is a positive integer
 (defthm posp-Q*2^S-n-is-even
   (implies (and (> n 1)
                 (natp n)
@@ -108,15 +109,12 @@
 
 ;; (least-repeated-square tt M p)
 ;; calculates the least i, 0<=i<M, such that tt^(2^i) = 1 mod p
-;; p will be (primes::bn-254-group-prime)
-;; Return value of 0 means either tt^2^0 = 1 mod p or i doesn't exist
+;; Return value of 0 means either tt = 1 mod p, or no such i exists.
 
 (defun least-repeated-square-aux (i tt M p)
   (declare (xargs :guard (and (natp i) (natp tt) (natp M) (natp p) (<= 0 i)
                               (< 2 p))
-                  :guard-hints (("Goal"
-                                 :in-theory (enable rationalp natp)
-                                 ))
+                  :guard-hints (("Goal" :in-theory (enable rationalp)))
                   ))
   (declare (xargs :measure (nfix (- M i))))
   (if (and (natp i) (natp M) (< i M))
@@ -130,53 +128,52 @@
   (implies (< 0 M)
            (< (least-repeated-square-aux i tt M p) M)))
 
+;; This variant is needed for verifying guards on T-S-aux
 (defthm least-repeated-square-aux-less-than-M--variant
   (implies (and (natp M) (< 0 M) (natp (least-repeated-square-aux i tt M p)))
            (<= 0 (+ -1 M (- (least-repeated-square-aux i tt M p))))))
 
 (defun least-repeated-square (tt M p)
   (declare (xargs :guard (and (natp tt) (natp M) (natp p) (< 0 M) (< 2 p))))
-      (least-repeated-square-aux 0 tt M p)) 
+  (least-repeated-square-aux 0 tt M p))
 
 (defthm least-repeated-square-less-than-M
   (implies (< 0 M)
            (< (least-repeated-square tt M p) M)))
 
-;least-repeated-square returns a natp
 (defthm least-repeated-square-is-natp
   (natp (least-repeated-square tt M p)))
+
 
 ;; ----------------
 ;; main T-S loop
 ;; step 4 of
 ;; https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#The_algorithm
 ;; if (least-repeated-square tt m p) returns 0, then return R,
-;; else update c, M and R and go into next loop 
+;; else update c, M and R and go into next loop
 
 (encapsulate
   ()
-  
+
   (local
    (defthm T-S-aux-subgoal
      (IMPLIES (NOT (ZP (LEAST-REPEATED-SQUARE TT M P)))
               (O< (NFIX (LEAST-REPEATED-SQUARE TT M P))
                   (NFIX M)))
-     :hints (("Goal"
-              :use (:instance least-repeated-square-aux-less-than-M (i 1) (tt tt)
-                              (m m) (p p))
-              ))
+     :hints (("Goal" :use (:instance
+                           least-repeated-square-aux-less-than-M
+                           (i 1) (tt tt) (m m) (p p))))
      )
    )
 
   (defun T-S-aux (M c tt R p)
     (declare (xargs :measure (nfix M)
                     :guard-debug t
-                    :guard (and (posp M) (natp c) (natp tt) (natp R)
+                    :guard (and (posp M) (natp c) (natp tt)
+                                (natp R)
                                 (rtl::primep p) (< 2 p))
-                    :hints (("Goal"
-                             :use (:instance T-S-aux-subgoal
-                                             (tt tt) (m m) (p p))
-                            ))
+                    :hints (("Goal" :use (:instance T-S-aux-subgoal
+                                                    (tt tt) (m m) (p p))))
                     ))
     (let ((M2 (least-repeated-square tt M p)))
       (if (zp M2)
@@ -193,12 +190,12 @@
 
 (defthm integerp-T-S-aux
   (implies  (and (natp M)
-		 (natp c)
-		 (natp tt)
-		 (natp R)
-		 (natp p)
-		 (< 2 p))
-	    (natp (T-S-aux M c tt R p)))
+                 (natp c)
+                 (natp tt)
+                 (natp R)
+                 (natp p)
+                 (< 2 p))
+            (natp (T-S-aux M c tt R p)))
   )
 
 (defthm integerp-of-mod-expt-fast-1
@@ -210,26 +207,26 @@
 
 (defthm mod-expt-fast-natp
   (implies (and (integerp n)
-		(< 1 n)
-		(natp a)
-		(natp i))
-	   (natp (acl2::mod-expt-fast a i n)))
+                (< 1 n)
+                (natp a)
+                (natp i))
+           (natp (acl2::mod-expt-fast a i n)))
   :hints (("Goal"
-	   :in-theory (e/d (acl2::mod-expt-fast) ())
-	   ))
+           :in-theory (e/d (acl2::mod-expt-fast) ())
+           ))
   )
 
 (defthm natp-lemma1
   (implies (and (natp n)
-		(oddp q)
-		(natp q)
-		(rtl::primep p)
-		(< n p)
-		(> p 2))
-	   (natp (ACL2::MOD-EXPT-FAST N	(+ 1/2 (* 1/2 q)) P)))
+                (oddp q)
+                (natp q)
+                (rtl::primep p)
+                (< n p)
+                (> p 2))
+           (natp (ACL2::MOD-EXPT-FAST N(+ 1/2 (* 1/2 q)) P)))
   :hints (("Goal"
-	   :in-theory (enable natp acl2::not-evenp-when-oddp)
-	   ))
+           :in-theory (enable acl2::not-evenp-when-oddp)
+           ))
   )
 
 ;;if (MV-NTH 1 (Q*2^S (+ -1 P))) is posp implies that it is != 0
@@ -256,15 +253,14 @@
 ;;The function returns the square root of n in the prime field p
 
 (define tonelli-shanks-sqrt-aux ((n natp) (p natp) (z natp))
-  :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (has-square-root? n p) (not (has-square-root? z p)))
+  :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (has-square-root? n p)
+              (not (has-square-root? z p)))
   :guard-debug t
   :short "Tonelli-Shanks modular square root for n in the prime field p"
   :long "Finds the square root of n modulo p.  p must be an odd prime.
          z is a quadratic nonresidue in p. n is quadratic residue and can also
          be 0"
-  :returns (sqrt natp :hyp :guard :hints (("Goal"
-					   :in-theory (enable natp)
-					   )))
+  :returns (sqrt natp :hyp :guard)
   :parents (acl2::number-theory)
 
   (if (= n 0)
@@ -277,13 +273,12 @@
             (tt (acl2::mod-expt-fast n Q p))
             (R (acl2::mod-expt-fast n (/ (+ Q 1) 2) p)))
         (T-S-aux M c tt R p))))
-  :guard-hints (("Goal"
-                 :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
-                                  acl2::not-evenp-when-oddp
-                                  acl2::mod-expt-fast
-				  rtl::oddp-odd-prime
-				  natp)
-                                 (oddp)))))
+  :guard-hints (("Goal" :in-theory (e/d
+                                    (acl2::integerp-of-*-of-1/2-becomes-evenp
+                                     acl2::not-evenp-when-oddp
+                                     acl2::mod-expt-fast
+                                     rtl::oddp-odd-prime)
+                                    (oddp)))))
 
 
 ;; ----------------
@@ -301,13 +296,9 @@
   :short "Tonelli-Shanks modular square root."
   :long "Finds the square root of n modulo p.  p must be an odd prime.
          z is a quadratic nonresidue in p."
-  :returns (sqrt natp :hyp :guard :hints (("Goal"
-					   :in-theory (enable natp)
-					   )))
+  :returns (sqrt natp :hyp :guard)
   :parents (acl2::number-theory)
   (if (has-square-root? n p)
       (tonelli-shanks-sqrt-aux n p z)
     0)
   )
-
-
