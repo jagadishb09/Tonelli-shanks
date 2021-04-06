@@ -64,7 +64,7 @@
     (if (oddp n)
         (mv n 0)
       (mv-let (inner-q inner-s)
-          (Q*2^S (/ n 2))
+        (Q*2^S (/ n 2))
         (mv inner-q (+ inner-s 1)))))
   ///
   (verify-guards Q*2^S))
@@ -114,7 +114,6 @@
 (defun least-repeated-square-aux (i tt M p)
   (declare (xargs :guard (and (natp i) (natp tt) (natp M) (natp p) (<= 0 i)
                               (< 2 p))
-                  :guard-hints (("Goal" :in-theory (enable rationalp)))
                   ))
   (declare (xargs :measure (nfix (- M i))))
   (if (and (natp i) (natp M) (< i M))
@@ -144,13 +143,66 @@
 (defthm least-repeated-square-is-natp
   (natp (least-repeated-square tt M p)))
 
+;; ----------------
+
+;; Squares base n times,
+;; i.e., computes base^(2^n)
+;; for (natp n) and (natp base) and odd prime p.
+(define repeated-square ((base natp) (n natp) (p natp))
+  :returns (retval natp)
+  :measure (nfix n)
+  (declare (xargs :guard (and (natp base) (natp n) (natp p) (< 2 p))))
+  (if (or (not (natp base)) (not (natp n)) (not (natp p)) (< p 3))
+      0
+    (if (zp n)
+        base
+      (repeated-square (mod (* base base) p) (- n 1) p))))
+
+(encapsulate
+  ()
+
+  (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
+  (local (include-book "arithmetic/equalities" :dir :system))
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (local
+   (defthm repeated-square-=mod-expt-fast-*1/3
+     (implies (posp a)
+              (equal (* (expt c (expt 2 (+ -1 a)))
+                        (expt c (expt 2 (+ -1 a))))
+                     (expt c (expt 2 a))))
+     :hints (("Goal"
+              :use ((:instance acl2::exponents-add-for-nonneg-exponents
+                               (r c)
+                               (i (EXPT 2 (+ -1 a)))
+                               (j (EXPT 2 (+ -1 a)))))
+              ))
+     )
+   )
+  
+  (defthm repeated-square-equiv
+    (implies (and (posp x)
+                  (natp c)
+                  (natp p)
+                  (< 2 p))
+             (equal (repeated-square c x p)
+                    (acl2::mod-expt-fast c (expt 2 x) p)))
+    :hints (("Goal"
+             :use ((:instance acl2::mod-of-expt-of-mod (i (EXPT 2 (+ -1 X)))
+                              (x (* c c))
+                              (y p))
+                   (:instance acl2::exponents-add-unrestricted (r c)
+                              (i (EXPT 2 (+ -1 X))) (j (EXPT 2 (+ -1 X)))))
+             :in-theory (enable acl2::mod-expt-fast repeated-square)
+             ))
+    )
+  )
 
 ;; ----------------
 ;; main T-S loop
 ;; step 4 of
 ;; https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#The_algorithm
-;; if (least-repeated-square tt m p) returns 0, then return R,
-;; else update c, M and R and go into next loop
+;; if (least-repeated-square tt m p) returns 0, then return R, else update M, c, tt and R and go into next loop
 
 (encapsulate
   ()
@@ -178,7 +230,7 @@
     (let ((M2 (least-repeated-square tt M p)))
       (if (zp M2)
           R
-        (let ((b (expt c (expt 2 (- (- M M2) 1)))))
+        (let ((b (repeated-square c (- (- M M2) 1) p)))
           (let (
                 (c2 (mod (* b b) p))
                 (tt2 (mod (* tt b b) p))
@@ -229,17 +281,6 @@
            ))
   )
 
-;;if (MV-NTH 1 (Q*2^S (+ -1 P))) is posp implies that it is != 0
-(defthm mv-nth-1!=0
-  (implies (and (< 2 p)
-                (rtl::primep p)
-                )
-           (not (EQUAL (MV-NTH 1 (Q*2^S (+ -1 P))) 0)))
-  :hints (("Goal"
-           :use (:instance posp-Q*2^S-n-is-even (n (- p 1)))
-           ))
-  )
-
 ;; ----------------
 ;; Tonelli-Shanks modular square root algorithm,
 ;; with a refinement to always return the lesser of the two square roots.
@@ -247,10 +288,9 @@
 ;; The argument z must be a "quadratic nonresidue", which means a number
 ;; that has no square root in the prime field.
 
-;; The argument n must be a quadratic reside in the prime field and also can be
-;; equal to 0
+;; The argument n must be a quadratic reside in the prime field and it can also be equal to 0
 
-;;The function returns the square root of n in the prime field p
+;; The function returns the square root of n in the prime field p
 
 (define tonelli-shanks-sqrt-aux ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (has-square-root? n p)
@@ -273,12 +313,14 @@
             (tt (acl2::mod-expt-fast n Q p))
             (R (acl2::mod-expt-fast n (/ (+ Q 1) 2) p)))
         (T-S-aux M c tt R p))))
-  :guard-hints (("Goal" :in-theory (e/d
-                                    (acl2::integerp-of-*-of-1/2-becomes-evenp
-                                     acl2::not-evenp-when-oddp
-                                     acl2::mod-expt-fast
-                                     rtl::oddp-odd-prime)
-                                    (oddp)))))
+  :guard-hints (("Goal"
+                 :use ((:instance posp-Q*2^S-n-is-even (n (- p 1))))
+                 :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
+                                  acl2::not-evenp-when-oddp
+                                  acl2::mod-expt-fast
+                                  rtl::oddp-odd-prime)
+                                 (oddp))
+                 )))
 
 
 ;; ----------------
@@ -287,8 +329,7 @@
 ;; The argument z must be a "quadratic nonresidue", which means a number
 ;; that has no square root in the prime field.
 
-;; If this returns 0, it means either n is 0
-;; or there is no square root.
+;; If the function returns 0, it means either n is 0 or there is no square root.
 
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
