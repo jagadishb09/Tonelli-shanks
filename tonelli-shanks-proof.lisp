@@ -27,16 +27,18 @@
            ))
   )
 
+;; to-do make iff (or equal)
 (encapsulate
   ()
   (local (include-book "arithmetic-5/top" :dir :system))
   (defthm y^2=1modp
     (implies (and (rtl::primep p)
                   (integerp y)
-                  (> p 2)
-                  (= (mod (* y y) p) 1))
-             (or (= (mod y p) 1)
-                 (= (mod y p) (mod -1 p))))
+                  (> p 2))
+             (equal 
+              (equal (mod (* y y) p) 1))
+             (or (equal (mod y p) 1)
+                 (equal (mod y p) (mod -1 p))))
     :hints (("Goal"
              :cases ((rtl::divides p (- y 1))
                      (rtl::divides p (+ y 1)))
@@ -55,6 +57,65 @@
             )
     )
   )
+
+;; (skip-proofs
+;;  (defthmd least-repeated-square-aux-not=0-1
+;;    (implies (and (natp tt)
+;;                  (posp M)
+;;                  (natp p)
+;;                  (posp i)
+;; ;(<= 0 i)
+;;                  (< 2 p)
+;;                  (equal (least-repeated-square-aux i tt m p) lrs)
+;;                  (not (= lrs 0)))
+;;             (and (= (mod (expt tt (expt 2 (+ lrs (- i) 1))) p) 1)
+;;                  (< lrs M)
+;;                  (< i M)))
+;;    :hints (("Goal"
+;;             :in-theory (enable acl2::mod-expt-fast)
+;;             ))
+;;    )
+;;  )
+
+;; (encapsulate
+;;   ()
+
+;;   (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
+;;   (local (include-book "arithmetic/equalities" :dir :system))
+;;   (local (include-book "arithmetic-5/top" :dir :system))
+
+;;   (local
+;;    (defthm repeated-square-=mod-expt-fast-*1/3
+;;      (implies (posp a)
+;;               (equal (* (expt c (expt 2 (+ -1 a)))
+;;                         (expt c (expt 2 (+ -1 a))))
+;;                      (expt c (expt 2 a))))
+;;      :hints (("Goal"
+;;               :use ((:instance acl2::exponents-add-for-nonneg-exponents
+;;                                (r c)
+;;                                (i (EXPT 2 (+ -1 a)))
+;;                                (j (EXPT 2 (+ -1 a)))))
+;;               ))
+;;      )
+;;    )
+  
+;;   (defthm repeated-square-equiv
+;;     (implies (and (posp x)
+;;                   (natp c)
+;;                   (natp p)
+;;                   (< 2 p))
+;;              (equal (repeated-square c x p)
+;;                     (acl2::mod-expt-fast c (expt 2 x) p)))
+;;     :hints (("Goal"
+;;              :use ((:instance acl2::mod-of-expt-of-mod (i (EXPT 2 (+ -1 X)))
+;;                               (x (* c c))
+;;                               (y p))
+;;                    (:instance acl2::exponents-add-unrestricted (r c)
+;;                               (i (EXPT 2 (+ -1 X))) (j (EXPT 2 (+ -1 X)))))
+;;              :in-theory (enable acl2::mod-expt-fast repeated-square)
+;;              ))
+;;     )
+;;   )
 
 (defthmd least-repeated-square-aux-not=0-1
   (implies (and (natp tt)
@@ -460,20 +521,20 @@
  (encapsulate
    ()
 
-   (local (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system))
+   (local (include-book "kestrel/number-theory/tonelli-shanks-support" :dir :system))
 
-   (skip-proofs
-    (defthm mod-theorem-three
-      (implies (and (integerp a)
-                    (integerp i)
-                    (<= 0 i)
-                    (integerp n)
-                    (not (equal n 0))
-                    (integerp x))
-               (equal (mod (* x (expt (mod a n) i)) n)
-                      (mod (* x (expt a i)) n)))
-      )
-    )
+;(skip-proofs
+   (defthm mod-theorem-three
+     (implies (and (integerp a)
+                   (integerp i)
+                   (<= 0 i)
+                   (integerp n)
+                   (not (equal n 0))
+                   (integerp x))
+              (equal (mod (* x (expt (mod a n) i)) n)
+                     (mod (* x (expt a i)) n)))
+     )
+;)
    )
  )
 
@@ -1254,6 +1315,8 @@
 (encapsulate
   ()
 
+  ;;; 
+  
   (local
    (defthm t-s-aux-equiv-1
      (implies  (and (posp n)
@@ -1395,7 +1458,6 @@
 
 (defthm tonelli-shanks-is-sqrt-modp
   (implies (and (natp n)
-                (natp p)
                 (natp z)
                 (> p 2)
                 (has-square-root? n p)
@@ -1403,8 +1465,8 @@
                 (< z p)
                 (rtl::primep p)
                 (not (has-square-root? z p))
-                (equal (tonelli-shanks-has-sqrt n p z) y))
-           (= (mod (* y y) p) n))
+                (equal (tonelli-shanks-has-sqrt-aux n p z) y))
+           (equal (mod (* y y) p) n))
   :hints (("Goal"
            :use ((:instance hyps-true-T-S-aux
                             (n n)

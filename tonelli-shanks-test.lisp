@@ -23,7 +23,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
-(local (include-book "kestrel/arithmetic-light/mod-expt-fast" :dir :system))
+(include-book "kestrel/arithmetic-light/mod-expt-fast" :dir :system)
 (include-book "kestrel/number-theory/quadratic-residue" :dir :system)
 (local (include-book "projects/quadratic-reciprocity/eisenstein" :dir :system))
 
@@ -103,24 +103,16 @@
            ))
   )
 
-;; ----------------
-;; least repeated square to unity
-;; inner loop for main T-S loop
-
-;; (least-repeated-square tt M p)
-;; calculates the least i, 0<=i<M, such that tt^(2^i) = 1 mod p
-;; Return value of 0 means either tt = 1 mod p, or no such i exists.
-
-(defun least-repeated-square-aux (i tt M p)
-  (declare (xargs :guard (and (natp i) (natp tt) (natp M) (natp p) (<= 0 i)
+(defun least-repeated-square-aux (i tt^2^i M p)
+  (declare (xargs :guard (and (posp i) (natp tt^2^i) (natp M) (natp p)
                               (< 2 p))
                   ))
   (declare (xargs :measure (nfix (- M i))))
   (if (and (natp i) (natp M) (< i M))
-      (let ((next-square (acl2::mod-expt-fast tt (expt 2 i) p)))
+      (let ((next-square (mod (* tt^2^i tt^2^i) p)))
         (if (= next-square 1)
             i
-          (least-repeated-square-aux (+ i 1) tt M p)))
+          (least-repeated-square-aux (+ i 1) next-square M p)))
     0))
 
 (defthm least-repeated-square-aux-less-than-M
@@ -133,8 +125,14 @@
            (<= 0 (+ -1 M (- (least-repeated-square-aux i tt M p))))))
 
 (defun least-repeated-square (tt M p)
-  (declare (xargs :guard (and (natp tt) (natp M) (natp p) (< 0 M) (< 2 p))))
-  (least-repeated-square-aux 0 tt M p))
+  (declare (xargs :guard (and (natp tt) (natp M) (natp p) (< 2 p))))
+  (if (= tt 1)
+      0
+    (least-repeated-square-aux 1 tt M p)))
+
+(defthm least-repeated-square-less-than-M
+  (implies (< 0 M)
+           (< (least-repeated-square tt M p) M)))
 
 (defthm least-repeated-square-less-than-M
   (implies (< 0 M)
@@ -158,51 +156,11 @@
         base
       (repeated-square (mod (* base base) p) (- n 1) p))))
 
-(encapsulate
-  ()
-
-  (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
-  (local (include-book "arithmetic/equalities" :dir :system))
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (local
-   (defthm repeated-square-=mod-expt-fast-*1/3
-     (implies (posp a)
-              (equal (* (expt c (expt 2 (+ -1 a)))
-                        (expt c (expt 2 (+ -1 a))))
-                     (expt c (expt 2 a))))
-     :hints (("Goal"
-              :use ((:instance acl2::exponents-add-for-nonneg-exponents
-                               (r c)
-                               (i (EXPT 2 (+ -1 a)))
-                               (j (EXPT 2 (+ -1 a)))))
-              ))
-     )
-   )
-  
-  (defthm repeated-square-equiv
-    (implies (and (posp x)
-                  (natp c)
-                  (natp p)
-                  (< 2 p))
-             (equal (repeated-square c x p)
-                    (acl2::mod-expt-fast c (expt 2 x) p)))
-    :hints (("Goal"
-             :use ((:instance acl2::mod-of-expt-of-mod (i (EXPT 2 (+ -1 X)))
-                              (x (* c c))
-                              (y p))
-                   (:instance acl2::exponents-add-unrestricted (r c)
-                              (i (EXPT 2 (+ -1 X))) (j (EXPT 2 (+ -1 X)))))
-             :in-theory (enable acl2::mod-expt-fast repeated-square)
-             ))
-    )
-  )
-
 ;; ----------------
 ;; main T-S loop
 ;; step 4 of
 ;; https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#The_algorithm
-;; if (least-repeated-square tt m p) returns 0, then return R, else update M, c, tt and R and go into next loop
+;; if (least-repeated-square tt m p) returns 0, then return R, else update M, c, tt and R and call next loop
 
 (encapsulate
   ()
@@ -329,7 +287,8 @@
 ;; The argument z must be a "quadratic nonresidue", which means a number
 ;; that has no square root in the prime field.
 
-;; If the function returns 0, it means either n is 0 or there is no square root.
+;; If the function returns 0, it means either n is 0 or there is no square
+;; root.
 
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
