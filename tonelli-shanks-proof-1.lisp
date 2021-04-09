@@ -3,6 +3,46 @@
 
 (include-book "kestrel/number-theory/tonelli-shanks-test" :dir :system)
 
+;; (defthm lrs-equiv-lemma2
+;;   (implies (and (posp i)
+;;                 (p x)
+;;                 (< x i))
+;;            (O< (NFIX (+ i (- X) -1))
+;;                (NFIX (+ i (- X))))))
+           
+(defun lrs-equiv (x i tt m p)
+  (declare (xargs :guard (and (posp i) (natp tt) (natp M) (natp p) (natp x)
+                              (< 2 p))
+                  ))
+  (declare (xargs :measure (nfix (- (- M i) x))))
+  (if (and (posp i) (natp M)
+       (natp x) (< i m) (< x (+ (- M i))))
+      (let ((next-square (acl2::mod-expt-fast tt (expt 2 (+ x 1)) p)))
+        (if (= next-square 1)
+            (+ i x)
+          (lrs-equiv  (+ x 1) i tt M p)))
+    0))
+
+(defun lrs-equiv-out (i tt m p)
+  (declare (xargs :guard (and (posp i) (natp tt) (natp M) (natp p)
+                              (< 2 p))
+                  ))
+  (lrs-equiv 0 i tt m p))
+
+(defthm lrs-equiv-lemma
+  (implies (and (posp i)
+                (natp tt)
+                (natp m)
+                (natp p)
+                (< 2 p))
+           (equal (least-repeated-square-aux i tt m p)
+                  (lrs-equiv-out i tt m p)))
+  :hints (("Goal"
+           :in-theory (e/d (acl2::mod-expt-fast) () )
+           ))
+  )
+
+---
 (local
  (encapsulate
    ()
@@ -171,33 +211,6 @@
      )
    )
 
-;;   (defun lrs-aux-equiv (i tt M p)
-;;     (declare (xargs :guard (and (posp i) (natp tt) (natp M) (natp p) (<= 0 i)
-;;                                 (< 2 p))
-;;                     ))
-;;     (declare (xargs :measure (nfix (- M i))))
-;;     (if (and (posp i) (natp M) (< i M))
-;;         (let ((next-square (acl2::mod-expt-fast tt (expt 2 i) p)))
-;;           (if (= next-square 1)
-;;               i
-;;             (lrs-aux-equiv (+ i 1) tt M p)))
-;;       0))
-
-;;   (defthm least-repeated-square-aux-equiv
-;;     (implies (and ;(posp i)
-;;                   (natp tt)
-;;                   (natp m)
-;;                   (natp p)
-;;                   ;(<= 0 i)
-;;                   (< 2 p))
-;;              (equal (least-repeated-square-aux 1 tt m p)
-;;                     (lrs-aux-equiv 1 tt m p)))
-;;     )
-  
-;;   )
-
-;; ---
-
   (local
    (defthmd least-repeated-square-aux-lemma1
      (implies (and (posp i)
@@ -219,27 +232,6 @@
               :in-theory (e/d () (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b=))
               ))
      ))
-  
-  ;; (local
-  ;;  (defthmd least-repeated-square-aux-lemma1
-  ;;    (implies (and (natp x)
-  ;;                  (integerp tt)
-  ;;                  (integerp p)
-  ;;                  (< 2 p)
-  ;;                  (equal (mod (expt (mod (* tt tt) p)
-  ;;                                    (expt 2 x)) p)
-  ;;                         1))
-  ;;             (equal (mod (expt tt (expt 2 (+ 1 x))) p)
-  ;;                    1))
-  ;;    :hints (("Goal"
-  ;;             :use ((:instance mod-of-expt-of-mod (i (expt 2 x))
-  ;;                              (y p) (x (* tt tt)))
-  ;;                   (:instance expt-half-linear (i (+ x 1))))
-  ;;             :do-not-induct t
-  ;;             :in-theory (e/d () (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b=))
-  ;;             ))
-  ;;    )
-  ;;  )
   
   (local
    (defthm least-repeated-square-aux-lemma2
@@ -370,47 +362,6 @@
      )
    )
 
-  (local
-   (defthmd least-repeated-square-tt^2^lrs-lemma1
-     (implies (and (natp tt)
-                   (posp M)
-                   (natp p)
-                   (posp i)
-                   (< i m)
-                   (<= 1 x)
-                   (<= x (- m i))
-                   ;(< (+ i 1) m)
-                   (< 2 p)
-                   (equal (least-repeated-square-aux i tt m p) 0))
-                   ;(= lrs 0))
-             ; (not (= (least-repeated-square-aux i tt m p) 0)))
-              (not (= (mod (expt tt (expt 2 x)) p) 1)))
-     :hints (("Goal"
-              :use ((:instance least-repeated-square-aux-not=0-lemma1
-                               (tt tt) (m m) (p p) (i i) (lrs (least-repeated-square-aux i tt m p))
-                               ))
-              :in-theory (e/d (acl2::expt) (y^2=1modp primep-implies
-                                            mod-*a-b= mod-*mod-a*mod-b=))
-              ))))
-  )
---
-
-  (local
-   (defthmd least-repeated-square-tt^2^lrs-lemma1
-     (implies (and (natp tt)
-                   (posp M)
-                   (natp p)
-                   (posp i)
-                   (< 2 p)
-                   (equal (least-repeated-square-aux i tt m p) lrs)
-                   (= lrs 0))
-              (not (= (mod (expt tt (expt 2 (+ lrs (- i) 1))) p) 1)))
-     :hints (("Goal"
-              ;:use ((:instance least-repeated-square-aux-lemma2))
-              :in-theory (e/d () (y^2=1modp primep-implies
-                                                      mod-*a-b= mod-*mod-a*mod-b=))
-              ))))
-
   (skip-proofs
    (defthm least-repeated-square-tt^2^lrs=1-1
      (IMPLIES (AND (NOT (EQUAL 0 I))
@@ -460,7 +411,6 @@
              :in-theory (e/d (acl2::mod-expt-fast) (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b=))
              ))
     )
-  
   )
 
 ---
