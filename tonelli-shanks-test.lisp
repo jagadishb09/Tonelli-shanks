@@ -108,7 +108,7 @@
                               (< 2 p))
                   ))
   (declare (xargs :measure (nfix (- M i))))
-  (if (and (natp i) (natp M) (< i M))
+  (if (and (posp i) (natp M) (< i M))
       (let ((next-square (mod (* tt^2^i tt^2^i) p)))
         (if (= next-square 1)
             i
@@ -126,7 +126,7 @@
 
 (defun least-repeated-square (tt M p)
   (declare (xargs :guard (and (natp tt) (natp M) (natp p) (< 2 p))))
-  (if (= tt 1)
+  (if (= (mod tt p) 1)
       0
     (least-repeated-square-aux 1 tt M p)))
 
@@ -255,8 +255,8 @@
               (not (has-square-root? z p)))
   :guard-debug t
   :short "Tonelli-Shanks modular square root for n in the prime field p"
-  :long "Finds the square root of n modulo p.  p must be an odd prime.
-         z is a quadratic nonresidue in p. n is quadratic residue and can also
+  :long "Finds the square root of n modulo p. p must be an odd prime.
+         z is a quadratic nonresidue in p. n is a quadratic residue and can also
          be 0"
   :returns (sqrt natp :hyp :guard)
   :parents (acl2::number-theory)
@@ -280,7 +280,6 @@
                                  (oddp))
                  )))
 
-
 ;; ----------------
 ;; Tonelli-Shanks modular square root algorithm.
 
@@ -290,11 +289,11 @@
 ;; If the function returns 0, it means either n is 0 or there is no square
 ;; root.
 
-(define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
+(define tonelli-shanks-either-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
   :guard-debug t
   :short "Tonelli-Shanks modular square root."
-  :long "Finds the square root of n modulo p.  p must be an odd prime.
+  :long "Finds a square root of n modulo p if it exists, else returns 0. p must be an odd prime.
          z is a quadratic nonresidue in p."
   :returns (sqrt natp :hyp :guard)
   :parents (acl2::number-theory)
