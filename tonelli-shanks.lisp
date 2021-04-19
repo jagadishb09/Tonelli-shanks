@@ -153,6 +153,42 @@
         base
       (repeated-square (mod (* base base) p) (- n 1) p))))
 
+(encapsulate
+  ()
+
+  (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
+  (local (include-book "arithmetic/equalities" :dir :system))
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (local
+   (defthm repeated-square-=mod-expt-fast-*1/3
+     (implies (posp a)
+              (equal (* (expt c (expt 2 (+ -1 a)))
+                        (expt c (expt 2 (+ -1 a))))
+                     (expt c (expt 2 a))))
+     :hints (("goal"
+              :use ((:instance acl2::exponents-add-for-nonneg-exponents
+                               (r c)
+                               (i (expt 2 (+ -1 a)))
+                               (j (expt 2 (+ -1 a)))))
+              ))))
+  
+  (defthm repeated-square-equiv
+    (implies (and (posp x)
+                  (natp c)
+                  (natp p)
+                  (< 2 p))
+             (equal (repeated-square c x p)
+                    (acl2::mod-expt-fast c (expt 2 x) p)))
+    :hints (("goal"
+             :use ((:instance acl2::mod-of-expt-of-mod (i (expt 2 (+ -1 x)))
+                              (x (* c c))
+                              (y p))
+                   (:instance acl2::exponents-add-unrestricted (r c)
+                              (i (expt 2 (+ -1 x))) (j (expt 2 (+ -1 x)))))
+             :in-theory (enable acl2::mod-expt-fast repeated-square)
+             ))))
+
 ;; ----------------
 ;; main T-S loop
 ;; step 4 of
@@ -363,41 +399,7 @@
                                         (n n) (p p) (z z))
                  :in-theory (e/d (tonelli-shanks-sqrt-aux) ()))))
 
-(encapsulate
-  ()
-
-  (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
-  (local (include-book "arithmetic/equalities" :dir :system))
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (local
-   (defthm repeated-square-=mod-expt-fast-*1/3
-     (implies (posp a)
-              (equal (* (expt c (expt 2 (+ -1 a)))
-                        (expt c (expt 2 (+ -1 a))))
-                     (expt c (expt 2 a))))
-     :hints (("goal"
-              :use ((:instance acl2::exponents-add-for-nonneg-exponents
-                               (r c)
-                               (i (expt 2 (+ -1 a)))
-                               (j (expt 2 (+ -1 a)))))
-              ))))
-  
-  (defthm repeated-square-equiv
-    (implies (and (posp x)
-                  (natp c)
-                  (natp p)
-                  (< 2 p))
-             (equal (repeated-square c x p)
-                    (acl2::mod-expt-fast c (expt 2 x) p)))
-    :hints (("goal"
-             :use ((:instance acl2::mod-of-expt-of-mod (i (expt 2 (+ -1 x)))
-                              (x (* c c))
-                              (y p))
-                   (:instance acl2::exponents-add-unrestricted (r c)
-                              (i (expt 2 (+ -1 x))) (j (expt 2 (+ -1 x)))))
-             :in-theory (enable acl2::mod-expt-fast repeated-square)
-             ))))
+;; show that if n is a positve integer and has a square root in the prime field p then, the square roots are positive integers and less than the prime number p:
 
 (local
  (encapsulate
@@ -500,37 +502,36 @@
            :induct (t-s-aux m c tt r p)
            )))
 
-(local
- (defthm tonelli-shanks-sqrt-aux-is-posp<p
-   (implies (and (posp n)
-                 (natp z)
-                 (> p 2)
-                 (has-square-root? n p)
-                 (< n p)
-                 (< z p)
-                 (rtl::primep p)
-                 (not (has-square-root? z p))
-                 (equal (tonelli-shanks-sqrt-aux n p z) y))
-            (and (posp y)
-                 (< y p)))
-   :hints (("Goal"
-            :in-theory (e/d (tonelli-shanks-sqrt-aux has-square-root?) ())
-            :use ((:instance hyps-t-s-aux
-                             (n n)
-                             (p p)
-                             (z z)
-                             (q (mv-nth 0 (q*2^s (- p 1))))
-                             (c (acl2::mod-expt-fast z (mv-nth 0 (q*2^s (- p 1))) p))
-                             (r (acl2::mod-expt-fast n (/ (+ (mv-nth 0 (q*2^s (- p 1))) 1) 2) p)))
-                  (:instance t-s-aux-posp<p
-                             (n n)
-                             (p p)
-                             (m (mv-nth 1 (q*2^s (- p 1))))
-                             (c (acl2::mod-expt-fast z (mv-nth 0 (q*2^s (- p 1))) p))
-                             (tt (acl2::mod-expt-fast n (mv-nth 0 (q*2^s (- p 1))) p))
-                             (r (acl2::mod-expt-fast n (/ (+ (mv-nth 0 (q*2^s (- p 1))) 1) 2) p))
-                             )
-                  )))))
+(defthmd tonelli-shanks-sqrt-aux-is-posp<p
+  (implies (and (posp n)
+                (natp z)
+                (> p 2)
+                (has-square-root? n p)
+                (< n p)
+                (< z p)
+                (rtl::primep p)
+                (not (has-square-root? z p))
+                (equal (tonelli-shanks-sqrt-aux n p z) y))
+           (and (posp y)
+                (< y p)))
+  :hints (("Goal"
+           :in-theory (e/d (tonelli-shanks-sqrt-aux has-square-root?) ())
+           :use ((:instance hyps-t-s-aux
+                            (n n)
+                            (p p)
+                            (z z)
+                            (q (mv-nth 0 (q*2^s (- p 1))))
+                            (c (acl2::mod-expt-fast z (mv-nth 0 (q*2^s (- p 1))) p))
+                            (r (acl2::mod-expt-fast n (/ (+ (mv-nth 0 (q*2^s (- p 1))) 1) 2) p)))
+                 (:instance t-s-aux-posp<p
+                            (n n)
+                            (p p)
+                            (m (mv-nth 1 (q*2^s (- p 1))))
+                            (c (acl2::mod-expt-fast z (mv-nth 0 (q*2^s (- p 1))) p))
+                            (tt (acl2::mod-expt-fast n (mv-nth 0 (q*2^s (- p 1))) p))
+                            (r (acl2::mod-expt-fast n (/ (+ (mv-nth 0 (q*2^s (- p 1))) 1) 2) p))
+                            )
+                 ))))
 
 (defun natp-evenp (x)
   (and (natp x)
@@ -565,17 +566,18 @@
 
 (defun natp-oddp (x)
   (and (natp x)
-       (oddp x)))
+       (or (oddp x)
+           (equal x 0))))
 
 (encapsulate
   ()
   (local (include-book "arithmetic-3/top" :dir :system))
   
-  (define tonelli-shanks-odd-sqrt ((n posp) (p natp) (z natp))
+  (define tonelli-shanks-odd-sqrt ((n natp) (p natp) (z natp))
     :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
     :guard-debug t
     :short "Tonelli-Shanks modular square root."
-    :long "Finds the odd square root of the two square roots of n modulo p if it exists, otherwise returns 1. z is a quadratic nonresidue in p."
+    :long "Finds the odd square root of the two square roots of n modulo prime p if it exists, otherwise returns 0. z is a quadratic nonresidue in p."
     :returns (sqrt natp-oddp :hyp :guard :hints (("Goal" :cases ((= n 0))
                                                   :use ((:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))                                                    
                                                   :in-theory (e/d (tonelli-shanks-sqrt-aux oddp acl2::not-evenp-when-oddp) ())
@@ -586,7 +588,7 @@
           (if (oddp sqrt)
               sqrt
             (mod (- sqrt) p)))
-      1)
+      0)
     :guard-hints (("Goal" :use ((:instance natp-tonelli-shanks-sqrt-aux
                                            (n n) (p p) (z z))
                                 (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
