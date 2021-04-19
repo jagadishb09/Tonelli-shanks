@@ -186,6 +186,11 @@
    (local (include-book "arithmetic/equalities" :dir :system))
    (local (include-book "arithmetic-5/top" :dir :system))
 
+   (defthm integerp-mod
+     (implies (and (integerp m)
+                   (integerp n))
+              (integerp (mod m n))))
+   
    (defthm mod-*a-b=
      (implies (and (integerp a)
                    (integerp b)
@@ -289,6 +294,7 @@
               :in-theory (e/d () (mod))
               ))))
 
+  ;; y^2=1modp - key lemma required for the soundness theorem
   (defthm y^2=1modp
     (implies (and (rtl::primep p)
                   (integerp y)
@@ -299,6 +305,25 @@
     :hints (("goal"
              :use ((:instance y^2=1modp-1)
                    (:instance y^2=1modp-2))
+             )))
+
+  ;; lemma required for the correctness theorem
+  (defthm modx^2-y^2
+    (implies (and (natp x)
+                  (natp y)
+                  (rtl::primep p)
+                  (< 2 p)
+                  (< x p)
+                  (< y p)
+                  (equal (mod (* x x) p) (mod (* y y) p)))
+             (or (equal x y)
+                 (equal x (mod (- y) p))))
+    :hints (("Goal"
+             :use ((:instance rtl::divides-mod-equal (n p) (a (* x x)) (b (* y y)))
+                   (:instance y^2=1modp-lemma1 (p p) (a (+ x y)) (b (- x y)))
+                   (:instance rtl::divides-mod-equal (n p) (a x) (b y))
+                   (:instance rtl::divides-mod-equal (n p) (a x) (b (- y))))
+             :in-theory (e/d () (mod-*a-b= mod-*mod-a*mod-b=))
              )))
   )
 
@@ -1153,62 +1178,42 @@
                               (c p)))
              :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 ))
              ))))
---
-
+        
 (encapsulate
   ()
-  (local (in-theory nil))
-  (local (include-book "arithmetic-5/top" :dir :system))
+  
+  (local (include-book "arithmetic-3/top" :dir :system))
 
-  (defthm lemma1
-    (implies (and (posp x)
-                  (posp y)
-                  (rtl::primep p)
-                  (< 2 p)
-                  (< x p)
-                  (< y p)
-                  (equal (mod (* x x) p) (mod (* y y) p)))
-             (or (equal x y)
-                 (equal x (mod (- y) p))))
-    :hints (("Goal"
-             :in-theory (e/d () (mod-*a-b= mod-*mod-a*mod-b=))
-             )))
-  )
-
-(skip-proofs
- (defthm tonelli-shanks-is-correct-lemma1
-   (implies (and (natp x)
-                 (rtl::primep p)
-                 (< x p)
-                 (equal (mod (* x x) p) 0))
-            (= (+ x x) 0))))
-            
-(encapsulate
-  ()
-  (local (include-book "arithmetic-5/top" :dir :system))
+  (local
+   (defthm tonelli-shanks-is-correct-lemma1
+     (implies (and (natp x)
+                   (rtl::primep p)
+                   (< 2 p)
+                   (< x p)
+                   (equal (mod (* x x) p) 0))
+              (= (+ x x) 0))
+     :hints (("Goal"
+              :use (:instance modx^2-y^2 (x x) (y 0) (p p))
+              ))))
 
   (defthm tonelli-shanks-is-correct
-    (implies (and (natp p)
-                  (> p 2)
-                  (rtl::primep p)
-                  (natp n)
-                  (< n p)
-                  (has-square-root? n p)
-                  (< z p)
+    (implies (and (natp n)
                   (natp z)
+                  (> p 2)
+                  (has-square-root? n p)
+                  (< n p)
+                  (< z p)
+                  (rtl::primep p)
+                  (not (has-square-root? z p))
                   (natp y)
                   (< y p)
-                  (not (has-square-root? z p))
                   (= (mod (* y y) p) n))
              (or (= (tonelli-shanks-sqrt n p z) y)
                  (= (tonelli-shanks-sqrt n p z) (- p y))))
     :hints (("goal"
-             :use ((:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
-                   (:instance tonelli-shanks-is-correct-lemma1 (x y) (p p))
-                   (:instance natp-tonelli-shanks-sqrt-aux))
-             ;;       (:instance mod-*mod-a*mod-b=
-             ;;                  (a (- (tonelli-shanks-sqrt-aux n p z)))
-             ;;                  (b (- (tonelli-shanks-sqrt-aux n p z)))
-             ;;                  (c p)))
-             :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 ))
+             :use ((:instance tonelli-shanks-is-sqrt-modp (n n) (z z) (p p) (y (tonelli-shanks-sqrt n p z)))
+                   (:instance modx^2-y^2 (x (TONELLI-SHANKS-SQRT n P Z)) (y y) (p p))
+                   (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
+                   (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))
+             :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2 TONELLI-SHANKS-IS-SQRT-MODP TONELLI-SHANKS-IS-CORRECT-LEMMA1 NATP-TONELLI-SHANKS-SQRT-AUX))
              ))))
