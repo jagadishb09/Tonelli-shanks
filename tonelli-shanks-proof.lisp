@@ -1184,18 +1184,6 @@
   
   (local (include-book "arithmetic-3/top" :dir :system))
 
-  (local
-   (defthm tonelli-shanks-is-correct-lemma1
-     (implies (and (natp x)
-                   (rtl::primep p)
-                   (< 2 p)
-                   (< x p)
-                   (equal (mod (* x x) p) 0))
-              (= (+ x x) 0))
-     :hints (("Goal"
-              :use (:instance modx^2-y^2 (x x) (y 0) (p p))
-              ))))
-
   (defthm tonelli-shanks-is-correct
     (implies (and (natp n)
                   (natp z)
@@ -1215,5 +1203,5 @@
                    (:instance modx^2-y^2 (x (TONELLI-SHANKS-SQRT n P Z)) (y y) (p p))
                    (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))
-             :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2 TONELLI-SHANKS-IS-SQRT-MODP TONELLI-SHANKS-IS-CORRECT-LEMMA1 NATP-TONELLI-SHANKS-SQRT-AUX))
+             :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2 TONELLI-SHANKS-IS-SQRT-MODP NATP-TONELLI-SHANKS-SQRT-AUX))
              ))))
