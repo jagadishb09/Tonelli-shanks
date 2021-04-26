@@ -16,7 +16,7 @@
 (in-package "PRIMES")
 
 (include-book "xdoc/save" :dir :system) ;;defxdoc
-(include-book "xdoc/defxdoc-plus" :dir :system) ;;defxdoc
+(include-book "xdoc/defxdoc-plus" :dir :system)
 (table xdoc::xdoc 'xdoc::doc nil) ;;defxdoc
 
 (include-book "std/util/define" :dir :system)
@@ -39,10 +39,9 @@
 
 (local (in-theory (enable acl2::integerp-of-*-of-1/2-becomes-evenp)))
 
-(defxdoc+ tonelli-shanks-modular-sqrt-algorithm
+(defxdoc tonelli-shanks-modular-sqrt-algorithm
   :parents (acl2::number-theory)
   :short "Tonelli-Shanks Modular Square Root Algorithm."
-  :order-subtopics (tonelli-shanks-lesser-sqrt tonelli-shanks-sqrt tonelli-shanks-either-sqrt tonelli-shanks-greater-sqrt tonelli-shanks-even-sqrt tonelli-shanks-odd-sqrt tonelli-shanks-supportive-functions)
   :long "<b> <h3> Overview </h3> </b>
 <p> Tonelli-Shanks algorithm (tonelli-shanks-sqrt-aux), that's defined below, finds a square root of a natural number in the specified odd prime field. Inputs to the algorithm are, a natural number n for which we want to find a square root that is less than a odd prime number p, the odd prime number p and, a quadratic non-residue z. The algorithm returns 0 if n is equal to 0 or returns one of the square roots for n if there exists a square root. If n does not have a square root, the algorithm returns 0.</p>
 
@@ -56,12 +55,12 @@
 @(def repeated-square)
 @(thm repeated-square-equiv)
 @(def t-s-aux)
-@(def tonelli-shanks-sqrt-aux)"
-  )
+@(def tonelli-shanks-sqrt-aux)")
+(xdoc::order-subtopics tonelli-shanks-modular-sqrt-algorithm
+                       (tonelli-shanks-either-sqrt tonelli-shanks-lesser-sqrt tonelli-shanks-sqrt tonelli-shanks-greater-sqrt tonelli-shanks-even-sqrt tonelli-shanks-odd-sqrt tonelli-shanks-supportive-functions))
 
-(defxdoc+ tonelli-shanks-supportive-functions
+(defxdoc tonelli-shanks-supportive-functions
   :parents (tonelli-shanks-modular-sqrt-algorithm)
-  :default-parent t
   :short "Supportive Functions"
   :long "Supportive functions for the Tonelli-Shanks modular square root algorithm")
 
@@ -297,7 +296,6 @@
 ;; the function returns the square root of n in the prime field p
 
 (defun tonelli-shanks-sqrt-aux (n p z)
-;(n natp) (p natp) (z natp))
   (declare (xargs :guard (and (natp n) (natp p) (natp z) (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
                   :guard-hints (("goal"
                                  :use ((:instance posp-q*2^s-n-is-even (n (- p 1))))
@@ -305,16 +303,7 @@
                                                   acl2::not-evenp-when-oddp
                                                   acl2::mod-expt-fast
                                                   rtl::oddp-odd-prime)
-                                                 (oddp))
-                                 ))
-                  ))
-  
-;:guard-debug t
-;:short "tonelli-shanks modular square root of n in the prime field p"
-;:long "finds the square root of n modulo p. p must be an odd prime. z is a quadratic nonresidue in p. n is a quadratic residue and can also be equal to 0"
-;:returns (sqrt natp :hyp :guard)
-;:parents (tonelli-shanks-modular-sqrt-algorithm)
-
+                                                 (oddp))))))
   (if (not (has-square-root? n p))
       0
     (if (= n 0)
@@ -327,14 +316,6 @@
               (tt (acl2::mod-expt-fast n q p))
               (r (acl2::mod-expt-fast n (/ (+ q 1) 2) p)))
           (t-s-aux m c tt r p))))))
-;; :guard-hints (("goal"
-;;                :use ((:instance posp-q*2^s-n-is-even (n (- p 1))))
-;;                :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
-;;                                 acl2::not-evenp-when-oddp
-;;                                 acl2::mod-expt-fast
-;;                                 rtl::oddp-odd-prime)
-;;                                (oddp))
-;;                )))
 
 (defthm natp-tonelli-shanks-sqrt-aux
   (implies  (and (natp n)
@@ -367,7 +348,7 @@
 (define tonelli-shanks-lesser-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
   :guard-debug t
-  :short "Tonelli-shanks algorithm. Finds least square root if square root exists."
+  :short "Tonelli-shanks algorithm. Finds least square root if a square root exists."
   :long "Finds the lesser square root of the two square roots of n modulo p if it exists, otherwise returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
   :returns (sqrt natp :hyp :guard :hints (("goal"
                                            :use (:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z))
@@ -383,8 +364,8 @@
 
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
-  :short "Tonelli-shanks algorithm. Finds least square root."
-  :long "Finds the lesser square root of the two square roots of n modulo p if it exists, otherwise returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
+  :short "Tonelli-shanks algorithm. Finds the least square root."
+  :long "Finds the lesser square root of the two square roots of n modulo p if a square root exists. otherwise returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
   :returns (sqrt natp :hyp :guard)
   :parents (tonelli-shanks-modular-sqrt-algorithm)
   (tonelli-shanks-lesser-sqrt n p z))
@@ -392,7 +373,7 @@
 (define tonelli-shanks-either-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
   :guard-debug t
-  :short "Tonelli-shanks algorithm. Finds a square root if it exists."
+  :short "Tonelli-shanks algorithm. Finds a square root if a square root exists."
   :long "Finds a square root of n modulo p if it exists, else returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
   :returns (sqrt natp :hyp :guard)
   :parents (tonelli-shanks-modular-sqrt-algorithm)
@@ -402,7 +383,7 @@
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
   :guard-debug t
   :short "Tonelli-shanks algorithm. Finds the greater square root of the two if square root exists."
-  :long "Finds the greater square root of the two square roots of n modulo p if it exists, otherwise returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
+  :long "Finds the greater square root of the two square roots of n modulo p if square root exists, otherwise returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
   :returns (sqrt natp :hyp :guard :hints (("goal"
                                            :use (:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z))
                                            :in-theory (e/d (tonelli-shanks-sqrt-aux) ())
@@ -556,8 +537,8 @@
   (define tonelli-shanks-even-sqrt ((n natp) (p natp) (z natp))
     :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
     :guard-debug t
-    :short "Tonelli-shanks algorithm. Finds even square root if square root exists."
-    :long "Finds the even square root of the two square roots of n modulo p if it exists, otherwise returns 0. z is a quadratic nonresidue in p."
+    :short "Tonelli-shanks algorithm. Finds even square root if a square root exists."
+    :long "Finds the even square root of the two square roots of n modulo p if a square root exists, otherwise returns 0. z is a quadratic nonresidue in p."
     :returns (sqrt natp :hyp :guard :hints (("goal" :use ((:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))                                                    
                                              :in-theory (e/d (tonelli-shanks-sqrt-aux) ())
                                              )))
@@ -591,8 +572,8 @@
   (define tonelli-shanks-odd-sqrt ((n natp) (p natp) (z natp))
     :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
     :guard-debug t
-    :short "Tonelli-shanks algorithm. Finds odd square root if square root exists."
-    :long "Finds the odd square root of the two square roots of n modulo prime p if it exists, otherwise returns 0. z is a quadratic nonresidue in p."
+    :short "Tonelli-shanks algorithm. Finds odd square root if a square root exists."
+    :long "Finds the odd square root of the two square roots of n modulo prime p if a square root exists, otherwise returns 0. z is a quadratic nonresidue in p."
     :returns (sqrt natp-zero-or-oddp :hyp :guard :hints (("goal" :use ((:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))                                                    
                                                           :in-theory (e/d (tonelli-shanks-sqrt-aux oddp acl2::not-evenp-when-oddp) ())
                                                           )))

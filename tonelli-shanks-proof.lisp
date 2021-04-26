@@ -2,7 +2,7 @@
 (in-package "PRIMES")
 
 (include-book "xdoc/save" :dir :system) ;;defxdoc
-(include-book "xdoc/defxdoc-plus" :dir :system) ;;defxdoc
+(include-book "xdoc/defxdoc-plus" :dir :system)
 (table xdoc::xdoc 'xdoc::doc nil) ;;defxdoc
 
 (include-book "kestrel/number-theory/tonelli-shanks" :dir :system)
@@ -29,9 +29,7 @@
 <p> key lemma required to prove correctness theorem: </p>
 @(thm modx^2-y^2)
 <p> Proof of Tonelli-Shanks algorithm is correct: </p>
-@(thm tonelli-shanks-sqrt-aux-is-correct)
-"
-  )
+@(thm tonelli-shanks-sqrt-aux-is-correct)")
 
 (local
  (encapsulate
@@ -1171,8 +1169,7 @@
   
   (local (include-book "arithmetic-3/top" :dir :system))
 
-  (defrule tonelli-shanks-sqrt-aux-is-correct
-    :parents (tonelli-shanks-algorithm-is-correct)
+  (defthm tonelli-shanks-sqrt-aux-is-correct
     (implies (and (natp n)
                   (natp z)
                   (> p 2)
@@ -1259,4 +1256,4 @@
              :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (tonelli-shanks-sqrt-aux repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2 tonelli-shanks-is-sqrt-modp natp-tonelli-shanks-sqrt-aux))
              ))))
 
-(xdoc::save "./my_doc_dir-1" :error t)
+(xdoc::save "./my_doc_dir-1" :error t) ;;defxdoc
