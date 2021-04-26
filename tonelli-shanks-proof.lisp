@@ -66,6 +66,7 @@
 (local
  (encapsulate
    ()
+
    (local
     (defthm lrs-aux-lemma-1
       (implies (and (natp tt^2^i)
@@ -318,7 +319,7 @@
                   (equal (mod (* x x) p) (mod (* y y) p)))
              (or (equal x y)
                  (equal x (mod (- y) p))))
-    :hints (("Goal"
+    :hints (("goal"
              :use ((:instance rtl::divides-mod-equal (n p) (a (* x x)) (b (* y y)))
                    (:instance y^2=1modp-lemma1 (p p) (a (+ x y)) (b (- x y)))
                    (:instance rtl::divides-mod-equal (n p) (a x) (b y))
@@ -470,13 +471,11 @@
                               (tt tt) (m m) (p p)
                               (lrs (least-repeated-square-aux 1 tt m p)))
                    )
-             :in-theory (e/d (acl2::mod-expt-fast) (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
-             )))         
-  )
+             :in-theory (e/d (acl2::mod-expt-fast) (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))))))
 
 (encapsulate
   ()
-
+  
   (local (include-book "arithmetic-5/top" :dir :system))
 
   (local
@@ -491,8 +490,7 @@
                    (< i d))
               (not (= (mod (expt tt (expt 2 (- d i))) p) 1)))
      :hints (("goal"
-              :use (
-                    (:instance exponents-multiply
+              :use ((:instance exponents-multiply
                                (i 2)
                                (j (expt 2 (+ -1 (- i) (least-repeated-square-aux (+ 1 i) (mod (* tt tt) p) m p))))
                                (r tt))
@@ -502,8 +500,7 @@
                                                                                  (mod (* tt tt) p) m p)))))       
                     (:instance least-repeated-square-aux-lemma3 (tt tt) (m m) (p p)
                                (i i) (lrs (least-repeated-square-aux i tt m p))))
-              :in-theory (e/d (acl2::mod-expt-fast) (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))
-              ))))
+              :in-theory (e/d (acl2::mod-expt-fast least-repeated-square-aux) (y^2=1modp primep-implies mod-*a-b= mod-*mod-a*mod-b= mod-times-mod))))))
 
   (defthm least-repeated-square-is-least
     (implies (and (natp tt)
@@ -514,10 +511,7 @@
                   (not (= d 0)))
              (not (= (mod (expt tt (expt 2 (- d 1))) p) 1)))
     :hints (("goal"
-             :use (:instance least-repeated-square-aux-is-least
-                             (i 1) (tt tt) (m m) (p p) (d (least-repeated-square-aux 1 tt m p)))
-             )))
-  )
+             :use (:instance least-repeated-square-aux-is-least (i 1) (tt tt) (m m) (p p) (d (least-repeated-square-aux 1 tt m p)))))))
 
 (local
  (encapsulate
@@ -1145,6 +1139,34 @@
 (encapsulate
   ()
   
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  ;;defrule
+  (defthm tonelli-shanks-sqrt-aux-is-correct
+    (implies (and (natp n)
+                  (natp z)
+                  (> p 2)
+                  (has-square-root? n p)
+                  (< n p)
+                  (< z p)
+                  (rtl::primep p)
+                  (not (has-square-root? z p))
+                  (natp y)
+                  (< y p)
+                  (= (mod (* y y) p) n))
+             (or (= (tonelli-shanks-sqrt n p z) y)
+                 (= (tonelli-shanks-sqrt n p z) (- p y))))
+    :hints (("goal"
+             :use ((:instance tonelli-shanks-sqrt-aux-is-sqrt-modp (n n) (z z) (p p) (y (tonelli-shanks-sqrt-aux n p z)))
+                   (:instance modx^2-y^2 (x (tonelli-shanks-sqrt-aux n p z)) (y y) (p p))
+                   (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
+                   (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))
+             :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2 natp-tonelli-shanks-sqrt-aux))
+             ))))
+
+(encapsulate
+  ()
+  
   (local
    (encapsulate
      ()
@@ -1176,7 +1198,7 @@
                               (a (- (tonelli-shanks-sqrt-aux n p z)))
                               (b (- (tonelli-shanks-sqrt-aux n p z)))
                               (c p)))
-             :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 ))
+             :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (tonelli-shanks-sqrt-aux repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2))
              ))))
         
 (encapsulate
@@ -1184,6 +1206,7 @@
   
   (local (include-book "arithmetic-3/top" :dir :system))
 
+  ;;defrule
   (defthm tonelli-shanks-is-correct
     (implies (and (natp n)
                   (natp z)
@@ -1200,8 +1223,8 @@
                  (= (tonelli-shanks-sqrt n p z) (- p y))))
     :hints (("goal"
              :use ((:instance tonelli-shanks-is-sqrt-modp (n n) (z z) (p p) (y (tonelli-shanks-sqrt n p z)))
-                   (:instance modx^2-y^2 (x (TONELLI-SHANKS-SQRT n P Z)) (y y) (p p))
+                   (:instance modx^2-y^2 (x (tonelli-shanks-sqrt n p z)) (y y) (p p))
                    (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))
-             :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2 TONELLI-SHANKS-IS-SQRT-MODP NATP-TONELLI-SHANKS-SQRT-AUX))
+             :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (tonelli-shanks-sqrt-aux repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2 tonelli-shanks-is-sqrt-modp natp-tonelli-shanks-sqrt-aux))
              ))))
