@@ -46,7 +46,7 @@
   :long "<b> <h3> Overview </h3> </b>
 <p> Tonelli-Shanks algorithm (tonelli-shanks-sqrt-aux), that's defined below, finds a square root of a natural number in the specified odd prime field. Inputs to the algorithm are, a natural number n for which we want to find a square root that is less than a odd prime number p, the odd prime number p and, a quadratic non-residue z. The algorithm returns 0 if n is equal to 0 or returns one of the square roots for n if there exists a square root. If n does not have a square root, the algorithm returns 0.</p>
 
-<p> See subtopics for interface functions to the algorithm and supportive functions. </p>
+<p> Refer to tonelli-shanks-proof.lisp for the proof of correctness of the algorithm. See subtopics for the supportive functions and interface functions to the algorithm.</p>
 <h3> Definitions and Theorems </h3>
 @(def q*2^s)
 @(thm q2s-is-correct)

@@ -1,7 +1,37 @@
 
 (in-package "PRIMES")
 
+(include-book "xdoc/save" :dir :system) ;;defxdoc
+(include-book "xdoc/defxdoc-plus" :dir :system) ;;defxdoc
+(table xdoc::xdoc 'xdoc::doc nil) ;;defxdoc
+
 (include-book "kestrel/number-theory/tonelli-shanks" :dir :system)
+
+(defxdoc+ tonelli-shanks-algorithm-is-correct
+  :parents (tonelli-shanks-modular-sqrt-algorithm)
+  :short "Proof of correctness of the Tonelli-Shanks Modular Square Root Algorithm "
+  :long "<b> <h3> Overview </h3> </b>
+<p> Below are the key lemmas and proof of soundness and correctness of the Tonelli-Shanks algorithm. </p>
+<h3>Theorems </h3>
+<p>Key lemmas:</p>
+@(thm y^2=1modp)
+@(thm least-repeated-square-equiv)
+@(thm least-repeated-square-tt^2^lrs=1)
+@(thm least-repeated-square-is-least)
+<p>Theorem about loop invariants of the algorithm:</p>
+@(thm t-s-aux-loop-invariants)
+<p>Base case theorem:</p>
+@(thm t-s-aux-base-case)
+<p> Assuming some properties about the loop invariants and using loop invariants theorem and the base case, we can prove the following theorem about t-s-aux function of the Tonelli-Shanks algorithm. </p>
+@(thm t-s-aux-equiv)
+<p> Soundness theorem: </p>
+@(thm tonelli-shanks-sqrt-aux-is-sqrt-modp)
+<p> key lemma required to prove correctness theorem: </p>
+@(thm modx^2-y^2)
+<p> Proof of Tonelli-Shanks algorithm is correct: </p>
+@(thm tonelli-shanks-sqrt-aux-is-correct)
+"
+  )
 
 (local
  (encapsulate
@@ -1141,8 +1171,8 @@
   
   (local (include-book "arithmetic-3/top" :dir :system))
 
-  ;;defrule
-  (defthm tonelli-shanks-sqrt-aux-is-correct
+  (defrule tonelli-shanks-sqrt-aux-is-correct
+    :parents (tonelli-shanks-algorithm-is-correct)
     (implies (and (natp n)
                   (natp z)
                   (> p 2)
@@ -1200,7 +1230,7 @@
                               (c p)))
              :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (tonelli-shanks-sqrt-aux repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2))
              ))))
-        
+
 (encapsulate
   ()
   
@@ -1228,3 +1258,5 @@
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))
              :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (tonelli-shanks-sqrt-aux repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2 tonelli-shanks-is-sqrt-modp natp-tonelli-shanks-sqrt-aux))
              ))))
+
+(xdoc::save "./my_doc_dir-1" :error t)
