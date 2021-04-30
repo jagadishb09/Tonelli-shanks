@@ -302,18 +302,18 @@
                                                   acl2::mod-expt-fast
                                                   rtl::oddp-odd-prime)
                                                  (oddp))))))
-  (if (not (has-square-root? n p))
-      0
-    (if (= n 0)
-        0
-      (mv-let (q s)
-        (q*2^s (- p 1))
-        (let (
-              (m s)
-              (c (acl2::mod-expt-fast z q p))
-              (tt (acl2::mod-expt-fast n q p))
-              (r (acl2::mod-expt-fast n (/ (+ q 1) 2) p)))
-          (t-s-aux m c tt r p))))))
+  (if (has-square-root? n p)
+      (if (= n 0)
+          0
+        (mv-let (q s)
+          (q*2^s (- p 1))
+          (let (
+                (m s)
+                (c (acl2::mod-expt-fast z q p))
+                (tt (acl2::mod-expt-fast n q p))
+                (r (acl2::mod-expt-fast n (/ (+ q 1) 2) p)))
+            (t-s-aux m c tt r p))))
+    0))
 
 (defthm natp-tonelli-shanks-sqrt-aux
   (implies  (and (natp n)
