@@ -1,19 +1,23 @@
-; Number Theory Library
-; Tonelli-Shanks Square Root
+; number theory library
+; tonelli-shanks square root
 ;
-; Copyright (C) 2021 Kestrel Institute
+; copyright (c) 2021 kestrel institute
 ;
-; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+; license: a 3-clause bsd license. see the file books/3bsd-mod.txt.
 ;
-; Main Author: Eric McCarthy (mccarthy@kestrel.edu)
-; Contributing Authors:
-;   Alessandro Coglio (coglio@kestrel.edu),
-;   Eric Smith (eric.smith@kestrel.edu),
-;   Jagadish Bapanapally (jagadishb285@gmail.com)
+; main author: Eric Mccarthy (mccarthy@kestrel.edu)
+; contributing authors:
+;   alessandro coglio (coglio@kestrel.edu),
+;   eric smith (eric.smith@kestrel.edu),
+;   jagadish bapanapally (jagadishb285@gmail.com)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "PRIMES")
+
+(include-book "xdoc/save" :dir :system) ;;defxdoc
+(include-book "xdoc/defxdoc-plus" :dir :system)
+(table xdoc::xdoc 'xdoc::doc nil) ;;defxdoc
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -39,9 +43,9 @@
   :parents (acl2::number-theory)
   :short "Tonelli-Shanks Modular Square Root Algorithm."
   :long "<b> <h3> Overview </h3> </b>
-<p> Below is an implementation of the Tonelli-Shanks modular square root algorithm. The function tonelli-shanks-sqrt-aux returns a square root for a natural number n in the prime field p if a square root exists for n in the field. The function returns 0 if n is equal to 0 or if n does not have a square root.</p>
+<p> Tonelli-Shanks algorithm (tonelli-shanks-sqrt-aux), that's defined below, finds a square root of a natural number in the specified odd prime field. Inputs to the algorithm are, a natural number n for which we want to find a square root that is less than a odd prime number p, the odd prime number p and, a quadratic non-residue z. The algorithm returns 0 if n is equal to 0 or returns one of the square roots for n if there exists a square root. If n does not have a square root, the algorithm returns 0.</p>
 
-<p> Refer to tonelli-shanks-proof.lisp for the proof of the correctness of the function. See subtopics for the supportive functions and interface functions to tonelli-shanks-sqrt-aux.</p>
+<p> Refer to tonelli-shanks-proof.lisp for the proof of correctness of the algorithm. See subtopics for the supportive functions and interface functions to the algorithm.</p>
 <h3> Definitions and Theorems </h3>
 @(def q*2^s)
 @(thm q2s-is-correct)
@@ -63,24 +67,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; --------------------------------
-;; Square root
-;; Tonelli-Shanks algorithm.
-;; See:
-;;   https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#The_algorithm
-;; Another reference, not just about "extension fields" but with
+;; square root
+;; tonelli-shanks algorithm.
+;; see:
+;;   https://en.wikipedia.org/wiki/tonelli%e2%80%93shanks_algorithm#the_algorithm
+;; another reference, not just about "extension fields" but with
 ;; good explanations of the various modular square root options for various fields:
-;;   "Square root computation over even extension fields"
+;;   "square root computation over even extension fields"
 ;;   https://eprint.iacr.org/2012/685.pdf
 
 ;; ----------------
 ;; p - 1 = q.2^s
 
-;; Step 1 of
-;; https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#The_algorithm
+;; step 1 of
+;; https://en.wikipedia.org/wiki/tonelli%e2%80%93shanks_algorithm#the_algorithm
 
-;; Factors n into the s powers of 2 and the rest q.
-;; If n is a power of 2, q will be 1.
-;; Otherwise q will be the product of the odd prime factors.
+;; factors n into the s powers of 2 and the rest q.
+;; if n is a power of 2, q will be 1.
+;; otherwise q will be the product of the odd prime factors.
 ;;
 (define q*2^s ((n natp))
   :returns (mv (q natp) (s natp))
@@ -101,7 +105,7 @@
            (oddp (mv-nth 0 (q*2^s n))))
   :hints (("goal" :in-theory (e/d (q*2^s oddp) ()))))
 
-;; Show that q2s is correct:
+;; show that q2s is correct:
 
 (defthm q*2^s-type-0
   (natp (mv-nth 0 (q*2^s n)))
@@ -118,7 +122,7 @@
                   n))
   :hints (("goal" :in-theory (enable q*2^s acl2::expt-of-+))))
 
-;; If n is even, then, (mv-nth 1 (q*2^s n)) is a positive integer
+;; if n is even, then, (mv-nth 1 (q*2^s n)) is a positive integer
 (defthm posp-q*2^s-n-is-even
   (implies (and (> n 1)
                 (natp n)
@@ -129,24 +133,15 @@
                  (:instance q2s-q-is-odd (n n)))
            )))
 
-;; ----------------
-;; least repeated square to unity
-;; inner loop for main T-S loop
-
-;; (least-repeated-square tt m p)
-;; calculates the least i, 0<i<M, such that tt^(2^i) = 1 mod p
-;; p will be (primes::bn-254-group-prime)
-;; Return value of 0 means there is no integer, i that is >= 1 and < M for which (mod tt^2^i p) = 1
-
-(defun least-repeated-square-aux (i tt^2^i m p)
-  (declare (xargs :guard (and (posp i) (natp tt^2^i) (natp m) (natp p) (< 2 p))))
-  (declare (xargs :measure (nfix (- m i))))
-  (if (not (and (posp i) (natp m) (< i m)))
-      0
-    (let ((next-square (mod (* tt^2^i tt^2^i) p)))
-      (if (= next-square 1)
-          i
-        (least-repeated-square-aux (+ i 1) next-square m p)))))
+(defun least-repeated-square-aux (i tt^2^i M p)
+  (declare (xargs :guard (and (posp i) (natp tt^2^i) (natp M) (natp p) (< 2 p))))
+  (declare (xargs :measure (nfix (- M i))))
+  (if (and (posp i) (natp M) (< i M))
+      (let ((next-square (mod (* tt^2^i tt^2^i) p)))
+        (if (= next-square 1)
+            i
+          (least-repeated-square-aux (+ i 1) next-square M p)))
+    0))
 
 (defthm least-repeated-square-aux-less-than-m
   (implies (< 0 m)
@@ -192,6 +187,19 @@
   (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
   (local (include-book "arithmetic/equalities" :dir :system))
   (local (include-book "arithmetic-5/top" :dir :system))
+
+  (local
+   (defthm repeated-square-=mod-expt-fast-*1/3
+     (implies (posp a)
+              (equal (* (expt c (expt 2 (+ -1 a)))
+                        (expt c (expt 2 (+ -1 a))))
+                     (expt c (expt 2 a))))
+     :hints (("goal"
+              :use ((:instance acl2::exponents-add-for-nonneg-exponents
+                               (r c)
+                               (i (expt 2 (+ -1 a)))
+                               (j (expt 2 (+ -1 a)))))
+              ))))
   
   (defthm repeated-square-equiv
     (implies (and (posp x)
@@ -204,10 +212,6 @@
              :use ((:instance acl2::mod-of-expt-of-mod (i (expt 2 (+ -1 x)))
                               (x (* c c))
                               (y p))
-                   (:instance acl2::exponents-add-for-nonneg-exponents
-                              (r c)
-                              (i (expt 2 (+ -1 x)))
-                              (j (expt 2 (+ -1 x))))
                    (:instance acl2::exponents-add-unrestricted (r c)
                               (i (expt 2 (+ -1 x))) (j (expt 2 (+ -1 x)))))
              :in-theory (enable acl2::mod-expt-fast repeated-square)
@@ -226,9 +230,7 @@
                   :guard (and (posp m) (natp c) (natp tt)
                               (natp r)
                               (rtl::primep p) (< 2 p))
-                  :hints (("goal"
-                           :use (:instance least-repeated-square-aux (i 1) (tt^2^i tt) (m m) (p p))
-                           :in-theory (e/d (least-repeated-square least-repeated-square-aux) ())))))
+                  :hints (("goal" :use (:instance least-repeated-square-aux-less-than-m (i 1) (tt tt) (m m) (p p))))))
   (let ((m2 (least-repeated-square tt m p)))
     (if (zp m2)
         r
@@ -431,7 +433,9 @@
 (local
  (encapsulate
    ()
-   
+
+   (local (include-book "kestrel/number-theory/mod-expt-fast" :dir :system))
+
    (local
     (defthm lemma1
       (implies (and (posp m)
@@ -584,3 +588,5 @@
                                 (:instance natp-tonelli-shanks-sqrt-aux
                                            (n 0) (p p) (z z)))
                    :in-theory (e/d (tonelli-shanks-sqrt-aux acl2::not-evenp-when-oddp oddp) ())))))
+
+(xdoc::save "./my_doc_dir" :error t)
