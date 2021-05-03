@@ -134,9 +134,9 @@
 ;; inner loop for main T-S loop
 
 ;; (least-repeated-square tt m p)
-;; calculates the least i, 0<i<M, such that tt^(2^i) = 1 mod p
+;; calculates the least i, 0<i<m, such that tt^(2^i) = 1 mod p
 ;; p will be (primes::bn-254-group-prime)
-;; Return value of 0 means there is no integer, i that is >= 1 and < M for which (mod tt^2^i p) = 1
+;; Return value of 0 means there is no integer, i that is >= 1 and < m for which (mod tt^2^i p) = 1
 
 (defun least-repeated-square-aux (i tt^2^i m p)
   (declare (xargs :guard (and (posp i) (natp tt^2^i) (natp m) (natp p) (< 2 p))))
