@@ -15,9 +15,6 @@
 
 (in-package "PRIMES")
 
-(include-book "xdoc/save" :dir :system) ;;defxdoc
-(table xdoc::xdoc 'xdoc::doc nil) ;;defxdoc
-
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "kestrel/number-theory/tonelli-shanks" :dir :system)
@@ -1221,5 +1218,3 @@
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))
              :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt) (tonelli-shanks-sqrt-aux repeated-square y^2=1modp mod-times-mod mod-*a-b= mod-*mod-a*mod-b= least-repeated-square hyps-true-t-s-aux least-repeated-square-is-least least-repeated-square-tt^2^lrs=1 modx^2-y^2 tonelli-shanks-is-sqrt-modp natp-tonelli-shanks-sqrt-aux))
              ))))
-
-(xdoc::save "./my_doc_dir-1" :error t) ;;defxdoc
