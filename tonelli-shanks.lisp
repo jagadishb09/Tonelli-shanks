@@ -15,6 +15,9 @@
 
 (in-package "PRIMES")
 
+(include-book "xdoc/save" :dir :system) ;;defxdoc
+(table xdoc::xdoc 'xdoc::doc nil) ;;defxdoc
+
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
@@ -583,3 +586,5 @@
                                 (:instance natp-tonelli-shanks-sqrt-aux
                                            (n 0) (p p) (z z)))
                    :in-theory (e/d (tonelli-shanks-sqrt-aux acl2::not-evenp-when-oddp oddp) ())))))
+
+(xdoc::save "./my_doc_dir" :error t) ;;defxdoc
