@@ -23,7 +23,7 @@
   :parents (tonelli-shanks-modular-sqrt-algorithm)
   :short "Proof of correctness of the Tonelli-Shanks Modular Square Root Algorithm "
   :long "<b> <h3> Overview </h3> </b>
-<p> Below are the key lemmas and proof of soundness and correctness of the Tonelli-Shanks algorithm. </p>
+<p> Below are the key lemmas and proof of correctness of the Tonelli-Shanks algorithm. </p>
 <h3>Theorems </h3>
 <p>Key lemmas:</p>
 @(thm y^2=1modp)
@@ -34,13 +34,13 @@
 @(thm t-s-aux-loop-invariants)
 <p>Base case theorem:</p>
 @(thm t-s-aux-base-case)
-<p> Assuming some properties about the loop invariants and using loop invariants theorem and the base case, we can prove the following theorem about t-s-aux function of the Tonelli-Shanks algorithm. </p>
+<p> Assuming some properties about the loop invariants and using the theorems t-s-aux-loop-invariants, t-s-aux-base-case, we can prove the following theorem about t-s-aux function of the Tonelli-Shanks algorithm. </p>
 @(thm t-s-aux-equiv)
-<p> Soundness theorem: </p>
+<p> Proof of soundness of the algorithm: </p>
 @(thm tonelli-shanks-sqrt-aux-is-sqrt-modp)
-<p> key lemma required to prove correctness theorem: </p>
+<p> Key lemma required to prove that the algorithm is correct: </p>
 @(thm modx^2-y^2)
-<p> Proof of Tonelli-Shanks algorithm is correct: </p>
+<p> Proof that the Tonelli-Shanks algorithm is correct: </p>
 @(thm tonelli-shanks-sqrt-aux-is-correct)")
 
 (local

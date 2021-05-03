@@ -152,7 +152,7 @@
   (implies (< 0 m)
            (< (least-repeated-square-aux i tt m p) m)))
 
-;; this variant is needed for verifying guards on t-s-aux
+;; This variant is needed for verifying guards on t-s-aux
 (defthm least-repeated-square-aux-less-than-m--variant
   (implies (and (natp m) (< 0 m) (natp (least-repeated-square-aux i tt m p)))
            (<= 0 (+ -1 m (- (least-repeated-square-aux i tt m p))))))
@@ -171,8 +171,9 @@
   (natp (least-repeated-square tt m p)))
 
 ;; ----------------
+;; repeated square
 
-;; squares base n times,
+;; Squares base n times,
 ;; i.e., computes base^(2^n)
 ;; for (natp n) and (natp base) and odd prime p.
 (define repeated-square ((base natp) (n natp) (p natp))
@@ -216,9 +217,7 @@
 ;; ----------------
 ;; main t-s loop
 ;; step 4 of
-;; https://en.wikipedia.org/wiki/tonelli%e2%80%93shanks_algorithm#the_algorithm
-;; if (least-repeated-square tt m p) returns 0, then return r
-;; otherwise update m, c, tt and r and then go into next loop.
+;; https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#The_algorithm
 
 (defun t-s-aux (m c tt r p)
   (declare (xargs :measure (nfix m)
@@ -233,8 +232,7 @@
     (if (zp m2)
         r
       (let ((b (repeated-square c (- (- m m2) 1) p)))
-        (let (
-              (c2 (mod (* b b) p))
+        (let ((c2 (mod (* b b) p))
               (tt2 (mod (* tt b b) p))
               (r2 (mod (* r b) p)))
           (t-s-aux m2 c2 tt2 r2 p))))))
@@ -283,15 +281,17 @@
   )
 
 ;; ----------------
-;; tonelli-shanks modular square root algorithm,
-;; with a refinement to always return the lesser of the two square roots.
+;; Tonelli-Shanks modular square root algorithm
 
-;; the argument z must be a "quadratic nonresidue", which means a number
+;; The argument z must be a "quadratic nonresidue", which means a number
 ;; that has no square root in the prime field.
 
-;; the argument n must be a quadratic reside in the prime field and it can also be equal to 0
+;; The argument n must be an integer greater than or equal to 0.
 
-;; the function returns the square root of n in the prime field p
+;; The argument p must be a prime greater than 2.
+
+;; The function returns the square root of n in the prime field p if n has a square root.
+;; Otherwise returns 0.
 
 (defun tonelli-shanks-sqrt-aux (n p z)
   (declare (xargs :guard (and (natp n) (natp p) (natp z) (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
@@ -330,18 +330,14 @@
            )))
 
 ;; ----------------
-;; tonelli-shanks modular square root algorithm.
+;; Interface functions to the Tonelli-shanks modular square root algorithm.
 
-;; the argument z must be a "quadratic nonresidue", which means a number
+;; The argument z must be a "quadratic nonresidue", which means a number
 ;; that has no square root in the prime field.
 
-;; the argument n must be a integer greater than or equal to 0.
+;; The argument n must be an integer greater than or equal to 0.
 
-;; the argument p must be a prime greater that 2.
-
-;; the function returns the lesser number of the square roots of n modulo p if the square root exists, otherwise returns 0.
-
-;; if the function returns 0, it means either n is 0 or there is no square root
+;; The argument p must be a prime greater than 2.
 
 (define tonelli-shanks-lesser-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
@@ -394,7 +390,10 @@
   :guard-hints (("goal" :use (:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z))
                  :in-theory (e/d (tonelli-shanks-sqrt-aux) ()))))
 
-;; show that if n is a positve integer and has a square root in the prime field p then, the square roots are positive integers and less than the prime number p:
+;; Show that, if n is a positve integer and has a square root in the prime
+;; field p then, the square roots are positive integers and less than the prime
+;; number p (required for verifying return types of tonelli-shanks-even-sqrt
+;; and tonelli-shanks-odd-sqrt):
 
 (local
  (encapsulate
