@@ -749,7 +749,6 @@
       ()
       (local (include-book "arithmetic-5/top" :dir :system))
       
-
       (defthm lemma1
         (implies (and (natp tt)
                       (posp m)
