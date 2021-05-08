@@ -38,27 +38,41 @@
 (defxdoc tonelli-shanks-modular-sqrt-algorithm
   :parents (acl2::number-theory)
   :short "Tonelli-Shanks Modular Square Root Algorithm."
-  :long "<b> <h3> Overview </h3> </b>
-<p> Below is an implementation of the Tonelli-Shanks modular square root algorithm. The function tonelli-shanks-sqrt-aux returns a square root for a natural number n in the prime field p if a square root exists for n in the field. The function returns 0 if n is equal to 0 or if n does not have a square root.</p>
+  :long "<h3> Overview </h3>
 
-<p> Refer to tonelli-shanks-proof.lisp for the proof of the correctness of the function. See subtopics for the supportive functions and interface functions to tonelli-shanks-sqrt-aux.</p>
-<h3> Definitions and Theorems </h3>
-@(def q*2^s)
-@(thm q2s-is-correct)
-@(thm posp-q*2^s-n-is-even)
-@(def least-repeated-square-aux)
-@(def least-repeated-square)
-@(def repeated-square)
-@(thm repeated-square-equiv)
-@(def t-s-aux)
-@(def tonelli-shanks-sqrt-aux)")
+         <p>Below is an implementation of the Tonelli-Shanks modular square
+         root algorithm. The function tonelli-shanks-sqrt-aux returns a square
+         root for a natural number n in the prime field p if a square root
+         exists for n in the field. The function returns 0 if n is equal to 0
+         or if n does not have a square root.</p>
+
+         <p> See subtopics for interface functions and for the proof of
+         correctness of the algorithm, and supportive
+         functions to tonelli-shanks-sqrt-aux.</p>
+
+         <h3> Definitions and Theorems </h3>
+
+         @(def q*2^s)
+         @(thm q2s-is-correct)
+         @(thm posp-q*2^s-n-is-even)
+         @(def least-repeated-square-aux)
+         @(def least-repeated-square)
+         @(def repeated-square)
+         @(thm repeated-square-equiv)
+         @(def t-s-aux)
+         @(def tonelli-shanks-sqrt-aux)")
+
 (xdoc::order-subtopics tonelli-shanks-modular-sqrt-algorithm
-                       (tonelli-shanks-either-sqrt tonelli-shanks-lesser-sqrt tonelli-shanks-sqrt tonelli-shanks-greater-sqrt tonelli-shanks-even-sqrt tonelli-shanks-odd-sqrt tonelli-shanks-supportive-functions))
+                       (tonelli-shanks-either-sqrt tonelli-shanks-lesser-sqrt
+                       tonelli-shanks-sqrt tonelli-shanks-greater-sqrt
+                       tonelli-shanks-even-sqrt tonelli-shanks-odd-sqrt
+                       tonelli-shanks-supportive-functions))
 
 (defxdoc tonelli-shanks-supportive-functions
   :parents (tonelli-shanks-modular-sqrt-algorithm)
   :short "Supportive Functions"
-  :long "Supportive functions for the Tonelli-Shanks modular square root algorithm")
+  :long "Supportive functions for the Tonelli-Shanks modular square root
+         algorithm")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,7 +113,7 @@
 (defthm q2s-q-is-odd
   (implies (and (natp n) (< 0 n))
            (oddp (mv-nth 0 (q*2^s n))))
-  :hints (("goal" :in-theory (e/d (q*2^s oddp) ()))))
+  :hints (("Goal" :in-theory (e/d (q*2^s oddp) ()))))
 
 ;; Show that q2s is correct:
 
@@ -116,7 +130,7 @@
            (equal (* (mv-nth 0 (q*2^s n))
                      (expt 2 (mv-nth 1 (q*2^s n))))
                   n))
-  :hints (("goal" :in-theory (enable q*2^s acl2::expt-of-+))))
+  :hints (("Goal" :in-theory (enable q*2^s acl2::expt-of-+))))
 
 ;; If n is even, then, (mv-nth 1 (q*2^s n)) is a positive integer
 (defthm posp-q*2^s-n-is-even
@@ -124,7 +138,7 @@
                 (natp n)
                 (evenp n))
            (posp (mv-nth 1 (q*2^s n))))
-  :hints (("goal"
+  :hints (("Goal"
            :use ((:instance q2s-is-correct (n n))
                  (:instance q2s-q-is-odd (n n)))
            )))
@@ -136,7 +150,7 @@
 ;; (least-repeated-square tt m p)
 ;; calculates the least i, 0<i<m, such that tt^(2^i) = 1 mod p
 ;; p will be (primes::bn-254-group-prime)
-;; Return value of 0 means there is no integer, i that is >= 1 and < m for which (mod tt^2^i p) = 1
+;; Return value of 0 means there is no integer i  >= 1 and < m such that (mod (tt^2^i)^2^i p) = 1
 
 (defun least-repeated-square-aux (i tt^2^i m p)
   (declare (xargs :guard (and (posp i) (natp tt^2^i) (natp m) (natp p) (< 2 p))))
@@ -188,31 +202,31 @@
       (repeated-square (mod (* base base) p) (- n 1) p))))
 
 (encapsulate
-  ()
+ ()
 
-  (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
-  (local (include-book "arithmetic/equalities" :dir :system))
-  (local (include-book "arithmetic-5/top" :dir :system))
-  
-  (defthm repeated-square-equiv
-    (implies (and (posp x)
-                  (natp c)
-                  (natp p)
-                  (< 2 p))
-             (equal (repeated-square c x p)
-                    (acl2::mod-expt-fast c (expt 2 x) p)))
-    :hints (("goal"
-             :use ((:instance acl2::mod-of-expt-of-mod (i (expt 2 (+ -1 x)))
-                              (x (* c c))
-                              (y p))
-                   (:instance acl2::exponents-add-for-nonneg-exponents
-                              (r c)
-                              (i (expt 2 (+ -1 x)))
-                              (j (expt 2 (+ -1 x))))
-                   (:instance acl2::exponents-add-unrestricted (r c)
-                              (i (expt 2 (+ -1 x))) (j (expt 2 (+ -1 x)))))
-             :in-theory (enable acl2::mod-expt-fast repeated-square)
-             ))))
+ (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
+ (local (include-book "arithmetic/equalities" :dir :system))
+ (local (include-book "arithmetic-5/top" :dir :system))
+
+ (defthm repeated-square-equiv
+   (implies (and (posp x)
+		 (natp c)
+		 (natp p)
+		 (< 2 p))
+	    (equal (repeated-square c x p)
+		   (acl2::mod-expt-fast c (expt 2 x) p)))
+   :hints (("Goal"
+	    :use ((:instance acl2::mod-of-expt-of-mod (i (expt 2 (+ -1 x)))
+			     (x (* c c))
+			     (y p))
+		  (:instance acl2::exponents-add-for-nonneg-exponents
+			     (r c)
+			     (i (expt 2 (+ -1 x)))
+			     (j (expt 2 (+ -1 x))))
+		  (:instance acl2::exponents-add-unrestricted (r c)
+			     (i (expt 2 (+ -1 x))) (j (expt 2 (+ -1 x)))))
+	    :in-theory (enable acl2::mod-expt-fast repeated-square)
+	    ))))
 
 ;; ----------------
 ;; main t-s loop
@@ -225,7 +239,7 @@
                   :guard (and (posp m) (natp c) (natp tt)
                               (natp r)
                               (rtl::primep p) (< 2 p))
-                  :hints (("goal"
+                  :hints (("Goal"
                            :use (:instance least-repeated-square-aux (i 1) (tt^2^i tt) (m m) (p p))
                            :in-theory (e/d (least-repeated-square least-repeated-square-aux) ())))))
   (let ((m2 (least-repeated-square tt m p)))
@@ -254,7 +268,7 @@
                 (natp i)
                 (integerp n))
            (integerp (acl2::mod-expt-fast a i n)))
-  :hints (("goal" :in-theory (enable acl2::mod-expt-fast))))
+  :hints (("Goal" :in-theory (enable acl2::mod-expt-fast))))
 
 (defthm mod-expt-fast-natp
   (implies (and (integerp n)
@@ -262,7 +276,7 @@
                 (natp a)
                 (natp i))
            (natp (acl2::mod-expt-fast a i n)))
-  :hints (("goal"
+  :hints (("Goal"
            :in-theory (e/d (acl2::mod-expt-fast) ())
            ))
   )
@@ -275,11 +289,10 @@
                 (< n p)
                 (> p 2))
            (natp (acl2::mod-expt-fast n(+ 1/2 (* 1/2 q)) p)))
-  :hints (("goal"
+  :hints (("Goal"
            :in-theory (enable acl2::not-evenp-when-oddp)
            ))
   )
-
 ;; ----------------
 ;; Tonelli-Shanks modular square root algorithm
 
@@ -294,8 +307,10 @@
 ;; Otherwise returns 0.
 
 (defun tonelli-shanks-sqrt-aux (n p z)
-  (declare (xargs :guard (and (natp n) (natp p) (natp z) (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
-                  :guard-hints (("goal"
+  (declare (xargs :guard (and (natp n) (natp p) (natp z) (> p 2) (< z p)
+                              (rtl::primep p) (< n p)
+                              (not (has-square-root? z p)))
+                  :guard-hints (("Goal"
                                  :use ((:instance posp-q*2^s-n-is-even (n (- p 1))))
                                  :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
                                                   acl2::not-evenp-when-oddp
@@ -307,8 +322,7 @@
           0
         (mv-let (q s)
           (q*2^s (- p 1))
-          (let (
-                (m s)
+          (let ((m s)
                 (c (acl2::mod-expt-fast z q p))
                 (tt (acl2::mod-expt-fast n q p))
                 (r (acl2::mod-expt-fast n (/ (+ q 1) 2) p)))
@@ -325,7 +339,7 @@
                  (not (has-square-root? z p))
                  (< 2 p))
             (natp (tonelli-shanks-sqrt-aux n p z)))
-  :hints (("goal"
+  :hints (("Goal"
            :in-theory (e/d (tonelli-shanks-sqrt-aux) ())
            )))
 
@@ -333,7 +347,7 @@
 ;; Interface functions to the Tonelli-shanks modular square root algorithm.
 
 ;; The argument z must be a "quadratic nonresidue", which means a number
-;; that has no square root in the prime field.
+;; that has no square root in the prime field p.
 
 ;; The argument n must be an integer greater than or equal to 0.
 
@@ -342,10 +356,13 @@
 (define tonelli-shanks-lesser-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
   :guard-debug t
-  :short "Tonelli-shanks algorithm. Finds least square root if a square root exists."
-  :long "Finds the lesser square root of the two square roots of n modulo p if it exists, otherwise returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
-  :returns (sqrt natp :hyp :guard :hints (("goal"
-                                           :use (:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z))
+  :short "Tonelli-Shanks modular square root. Finds least square root if a square root exists."
+  :long "Finds the lesser square root of the two square roots of n modulo p if
+         a square root exists. Otherwise returns 0.  p must be an odd prime.
+         z is a quadratic nonresidue in p."
+  :returns (sqrt natp :hyp :guard :hints (("Goal"
+                                           :use (:instance natp-tonelli-shanks-sqrt-aux
+                                                           (n n) (p p) (z z))
                                            :in-theory (e/d (tonelli-shanks-sqrt-aux) ())
                                            )))
   :parents (tonelli-shanks-modular-sqrt-algorithm)
@@ -353,13 +370,19 @@
     (if (> sqrt (/ p 2))
         (mod (- sqrt) p)
       sqrt))
-  :guard-hints (("goal" :use ((:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z)))
-                 :in-theory (e/d (tonelli-shanks-sqrt-aux extra-info acl2::mod-expt-fast natp rtl::oddp-odd-prime) (has-square-root?)))))
+  :guard-hints (("Goal" :use ((:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z)))
+                 :in-theory (e/d (tonelli-shanks-sqrt-aux
+				  extra-info
+				  acl2::mod-expt-fast natp
+				  rtl::oddp-odd-prime)
+                                 (has-square-root?)))))
 
 (define tonelli-shanks-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
-  :short "Tonelli-shanks algorithm. Finds the least square root."
-  :long "Finds the lesser square root of the two square roots of n modulo p if a square root exists. otherwise returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
+  :short "Tonelli-Shanks modular square root. Finds the least square root."
+  :long "Finds the lesser square root of the two square roots of n modulo p if
+         a square root exists. Otherwise returns 0. p must be an odd prime. z
+         is a quadratic nonresidue in p."
   :returns (sqrt natp :hyp :guard)
   :parents (tonelli-shanks-modular-sqrt-algorithm)
   (tonelli-shanks-lesser-sqrt n p z))
@@ -367,8 +390,9 @@
 (define tonelli-shanks-either-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
   :guard-debug t
-  :short "Tonelli-shanks algorithm. Finds a square root if a square root exists."
-  :long "Finds a square root of n modulo p if it exists, else returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
+  :short "Tonelli-Shanks modular square root. Finds a square root if a square root exists."
+  :long "Finds a square root of n modulo p if it exists, else returns 0.
+         p must be an odd prime. z is a quadratic nonresidue in p."
   :returns (sqrt natp :hyp :guard)
   :parents (tonelli-shanks-modular-sqrt-algorithm)
   (tonelli-shanks-sqrt-aux n p z))
@@ -376,10 +400,13 @@
 (define tonelli-shanks-greater-sqrt ((n natp) (p natp) (z natp))
   :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
   :guard-debug t
-  :short "Tonelli-shanks algorithm. Finds the greater square root of the two if square root exists."
-  :long "Finds the greater square root of the two square roots of n modulo p if square root exists, otherwise returns 0. p must be an odd prime. z is a quadratic nonresidue in p."
-  :returns (sqrt natp :hyp :guard :hints (("goal"
-                                           :use (:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z))
+  :short "Tonelli-Shanks modular square root. Finds the greater square root."
+  :long "Finds the greater square root of the two square roots of n modulo p if
+         a square root exists, otherwise returns 0. p must be an odd prime.
+         z is a quadratic nonresidue in p."
+  :returns (sqrt natp :hyp :guard :hints (("Goal"
+                                           :use (:instance natp-tonelli-shanks-sqrt-aux
+                                                           (n n) (p p) (z z))
                                            :in-theory (e/d (tonelli-shanks-sqrt-aux) ())
                                            )))
   :parents (tonelli-shanks-modular-sqrt-algorithm)
@@ -387,10 +414,10 @@
     (if (> sqrt (/ p 2))
         sqrt
       (mod (- sqrt) p)))
-  :guard-hints (("goal" :use (:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z))
+  :guard-hints (("Goal" :use (:instance natp-tonelli-shanks-sqrt-aux (n n) (p p) (z z))
                  :in-theory (e/d (tonelli-shanks-sqrt-aux) ()))))
 
-;; Show that, if n is a positve integer and has a square root in the prime
+;; Show that if n is a positve integer and has a square root in the prime
 ;; field p then, the square roots are positive integers and less than the prime
 ;; number p (required for verifying return types of tonelli-shanks-even-sqrt
 ;; and tonelli-shanks-odd-sqrt):
@@ -402,7 +429,7 @@
    (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
    (local (include-book "kestrel/number-theory/mod-expt-fast" :dir :system))
    (local (in-theory (enable acl2::integerp-of-*-of-1/2-becomes-evenp)))
-   
+
    (defthmd hyps-t-s-aux
      (implies (and (natp n)
                    (natp p)
@@ -421,16 +448,18 @@
                    (posp r)
                    (< c p)
                    (< r p)))
-     :hints (("goal"
-              :use ((:instance acl2::<-of-0-and-mod-expt-fast-when-primep (n p) (i q) (a z))
-                    (:instance acl2::<-of-0-and-mod-expt-fast-when-primep (n p) (i (/ (+ q 1) 2)) (a n)))
+     :hints (("Goal"
+              :use ((:instance acl2::<-of-0-and-mod-expt-fast-when-primep
+                               (n p) (i q) (a z))
+                    (:instance acl2::<-of-0-and-mod-expt-fast-when-primep
+                               (n p) (i (/ (+ q 1) 2)) (a n)))
               :in-theory (e/d (acl2::mod-expt-fast) ())
               )))))
 
 (local
  (encapsulate
    ()
-   
+
    (local
     (defthm lemma1
       (implies (and (posp m)
@@ -462,7 +491,7 @@
                        (posp c2)
                        (< c2 p)
                        ))))
-     :hints (("goal"
+     :hints (("Goal"
               :use ((:instance acl2::<-of-0-and-mod-expt-fast-when-primep (n p)
                                (i (+ -1 m (- (least-repeated-square tt m p))))
                                (a c))
@@ -489,7 +518,7 @@
                  (< 2 p))
             (and (posp (t-s-aux m c tt r p))
                  (< (t-s-aux m c tt r p) p)))
-  :hints (("goal"
+  :hints (("Goal"
            :in-theory (e/d (t-s-aux) (least-repeated-square repeated-square))
            :induct (t-s-aux m c tt r p)
            )))
@@ -506,7 +535,7 @@
                 (equal (tonelli-shanks-sqrt-aux n p z) y))
            (and (posp y)
                 (< y p)))
-  :hints (("goal"
+  :hints (("Goal"
            :in-theory (e/d (tonelli-shanks-sqrt-aux has-square-root?) ())
            :use ((:instance hyps-t-s-aux
                             (n n)
@@ -528,13 +557,18 @@
 (encapsulate
   ()
   (local (include-book "arithmetic-3/top" :dir :system))
-  
+
   (define tonelli-shanks-even-sqrt ((n natp) (p natp) (z natp))
     :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
     :guard-debug t
-    :short "Tonelli-shanks algorithm. Finds even square root if a square root exists."
-    :long "Finds the even square root of the two square roots of n modulo p if a square root exists, otherwise returns 0. z is a quadratic nonresidue in p."
-    :returns (sqrt natp :hyp :guard :hints (("goal" :use ((:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))                                                    
+    :short "Tonelli-Shanks modular square root. Finds the even square root."
+    :long "Finds the even square root of the two square roots of n modulo p if
+           a square root exists, otherwise returns 0.
+           z is a quadratic nonresidue in p."
+    :returns (sqrt natp :hyp :guard :hints (("Goal"
+                                             :use ((:instance tonelli-shanks-sqrt-aux-is-posp<p
+                                                              (n n) (p p) (z z)
+                                                              (y (tonelli-shanks-sqrt-aux n p z))))
                                              :in-theory (e/d (tonelli-shanks-sqrt-aux) ())
                                              )))
     :parents (tonelli-shanks-modular-sqrt-algorithm)
@@ -542,7 +576,7 @@
       (if (evenp sqrt)
           sqrt
         (mod (- sqrt) p)))
-    :guard-hints (("goal" :use ((:instance natp-tonelli-shanks-sqrt-aux
+    :guard-hints (("Goal" :use ((:instance natp-tonelli-shanks-sqrt-aux
                                            (n n) (p p) (z z))
                                 (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                                 (:instance natp-tonelli-shanks-sqrt-aux
@@ -550,8 +584,10 @@
                    :in-theory (e/d (tonelli-shanks-sqrt-aux acl2::not-evenp-when-oddp) ())))
     ///
     (acl2::more-returns
-     (sqrt evenp :hyp :guard :hints (("goal"
-                                      :use ((:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))                                                    
+     (sqrt evenp :hyp :guard :hints (("Goal"
+                                      :use ((:instance tonelli-shanks-sqrt-aux-is-posp<p
+                                                       (n n) (p p) (z z)
+                                                       (y (tonelli-shanks-sqrt-aux n p z))))
                                       :in-theory (e/d (tonelli-shanks-sqrt-aux) ())
                                       ))))))
 
@@ -563,21 +599,28 @@
 (encapsulate
   ()
   (local (include-book "arithmetic-3/top" :dir :system))
-  
+
   (define tonelli-shanks-odd-sqrt ((n natp) (p natp) (z natp))
     :guard (and (> p 2) (< z p) (rtl::primep p) (< n p) (not (has-square-root? z p)))
     :guard-debug t
-    :short "Tonelli-shanks algorithm. Finds odd square root if a square root exists."
-    :long "Finds the odd square root of the two square roots of n modulo prime p if a square root exists, otherwise returns 0. z is a quadratic nonresidue in p."
-    :returns (sqrt natp-zero-or-oddp :hyp :guard :hints (("goal" :use ((:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z))))                                                    
-                                                          :in-theory (e/d (tonelli-shanks-sqrt-aux oddp acl2::not-evenp-when-oddp) ())
+    :short "Tonelli-Shanks modular square root. Finds the odd square root."
+    :long "Finds the odd square root of the two square roots of n modulo p if a
+           square root exists. Otherwise returns 0. z is a quadratic nonresidue
+           in p."
+    :returns (sqrt natp-zero-or-oddp :hyp :guard :hints (("Goal"
+                                                          :use ((:instance tonelli-shanks-sqrt-aux-is-posp<p
+                                                                           (n n) (p p) (z z)
+                                                                           (y (tonelli-shanks-sqrt-aux n p z))))
+                                                          :in-theory (e/d (tonelli-shanks-sqrt-aux
+                                                                           oddp acl2::not-evenp-when-oddp)
+                                                                          ())
                                                           )))
     :parents (tonelli-shanks-modular-sqrt-algorithm)
     (let ((sqrt (tonelli-shanks-sqrt-aux n p z)))
       (if (oddp sqrt)
           sqrt
         (mod (- sqrt) p)))
-    :guard-hints (("goal" :use ((:instance natp-tonelli-shanks-sqrt-aux
+    :guard-hints (("Goal" :use ((:instance natp-tonelli-shanks-sqrt-aux
                                            (n n) (p p) (z z))
                                 (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                                 (:instance natp-tonelli-shanks-sqrt-aux
