@@ -353,7 +353,6 @@
               :in-theory (e/d () (mod))
               ))))
 
-  ;; y^2=1modp - key lemma required for the soundness theorem
   (defthm y^2=1modp
     (implies (and (rtl::primep p)
                   (integerp y)
@@ -366,7 +365,6 @@
                    (:instance y^2=1modp-2))
              )))
 
-  ;; lemma required for the correctness theorem
   (defthm modx^2-y^2
     (implies (and (natp x)
                   (natp y)
@@ -1314,10 +1312,10 @@
                               (c p)))
              :in-theory (e/d (acl2::mod-expt-fast tonelli-shanks-sqrt tonelli-shanks-lesser-sqrt)
                              (tonelli-shanks-sqrt-aux repeated-square y^2=1modp
-                              mod-times-mod mod-*a-b= mod-*mod-a*mod-b=
-                              least-repeated-square hyps-true-t-s-aux
-                              least-repeated-square-is-least
-                              least-repeated-square-tt^2^lrs=1 modx^2-y^2))))))
+                                                      mod-times-mod mod-*a-b= mod-*mod-a*mod-b=
+                                                      least-repeated-square hyps-true-t-s-aux
+                                                      least-repeated-square-is-least
+                                                      least-repeated-square-tt^2^lrs=1 modx^2-y^2))))))
 
 (encapsulate
   ()
